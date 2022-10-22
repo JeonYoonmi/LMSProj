@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper  namespace="kr.ac.lms.mapper.QnaMapper">
+	<resultMap type="qnaVO" id="qnaMap">
+		<id property="qnaCd" column="qna_cd"/>
+		<result property="memCd" column="mem_cd"/>
+		<result property="qnaTtl" column="qna_ttl"/>
+		<result property="qnaCon" column="qna_con"/>
+		<result property="qnaYn" column="qna_yn"/>
+		<result property="qnaDt" column="qna_dt"/>
+		<result property="qnaHit" column="qna_hit"/>
+		<result property="rnum" column="rnum"/>
+		
+		<association property="qnaReplyVO" resultMap="qnarMap"></association>
+		<association property="memberVO" resultMap="memMap"></association>
+	</resultMap>
+	
+	<resultMap type="qnaReplyVO" id="qnarMap">
+		<id property="qnaCd" column="qna_cd"/>
+		<result property="qnarCon" column="qnar_con"/>
+		<result property="qnarDt" column="qnar_dt"/>
+	</resultMap>
+	
+	<resultMap type="memberVO" id="memMap">
+		<id property="memCd" column="mem_cd"/>
+		<result property="memNm" column="mem_nm"/>
+	</resultMap>
+	
+	<sql id="where">
+		<if test="cond != null and !cond.equals('')">
+			<choose>
+				<when test="cond == 'title'">
+					AND q.qna_ttl LIKE '%' ||  #{ keyword } || '%'
+				</when>
+				<when test="cond == 'content'">
+					AND q.qna_CON LIKE '%' ||  #{ keyword } || '%'
+				</when>
+			</choose>
+		</if>
+	</sql>
+	
+	<insert id="insertQ" parameterType="map">
+		INSERT INTO qna (
+	    qna_cd,
+	    mem_cd,
+	    qna_ttl,
+	    qna_con,
+	    qna_yn,
+	    qna_dt,
+	    qna_hit
+		) VALUES (
+		    qna_seq.nextval,
+		    #{memCd},
+		    #{qnaTtl},
+		    #{qnaCon},
+		    #{qnaYn},
+		    sysdate,
+		    0
+		)
+	</insert>
+	
+	<select id="list" parameterType="hashMap" resultMap="qnaMap">
+		
+		WITH U AS
+              (
+                   SELECT row_number() over(order by T.QNA_CD asc) as RNUM, 
+                   			row_number() over(order by T.qna_cd desc) prnum, T.*
+                   from  (
+                               select 
+                                   q.QNA_CD, q.MEM_CD, q.QNA_TTL, q.QNA_CON, q.QNA_YN, q.QNA_DT, q.QNA_HIT,
+                                   r.QNAR_CON, r.QNAR_DT 
+                                   from qna q left outer join qna_reply r
+                                   on q.qna_cd = r.qna_cd
+                                   where 1 = 1
+                                   <include refid="where"></include>
+                           )T
+                        )
+       SELECT U.*
+       FROM U
+       WHERE U.PRNUM BETWEEN (#{ currentPage } * #{ show }) - (#{ show } - 1) AND (#{ currentPage } * #{ show })
+	</select>
+	
+	<select id="detail" parameterType="map" resultMap="qnaMap">
+		SELECT
+		    q.qna_cd,
+		    q.mem_cd,
+		    q.qna_ttl,
+		    q.qna_con,
+		    q.qna_yn,
+		    q.qna_dt,
+		    q.qna_hit,
+		    qr.qnar_con,
+		    qr.qnar_dt
+		    , (select mem_nm from member
+		     where mem_cd = #{memCd}) as mem_nm
+		FROM
+		    qna q left outer join qna_reply qr on qr.qna_cd = q.qna_cd
+		    left outer join member m
+		    on q.mem_cd = m.mem_cd
+		where q.qna_cd = #{qnaCd}
+	</select>
+	
+	<insert id="qnarWrite" parameterType="map">
+		INSERT INTO qna_reply (
+		    qna_cd,
+		    qnar_con,
+		    qnar_dt
+		) VALUES (
+		    #{qnaCd},
+		    #{qnarCon},
+		    sysdate
+		)
+	</insert>
+	
+	<update id="increaseHit" parameterType="map">
+		update qna
+		set qna_hit = qna_hit+1
+		where qna_cd=#{qnaCd}
+	</update>
+	
+	<update id="updateRepl" parameterType="map">
+		UPDATE qna_reply
+		    SET
+		        qnar_con = #{qnarCon}
+		WHERE
+		    qna_cd =#{qnaCd}
+	</update>
+	
+	<update id="updateQ" parameterType="map">
+		UPDATE qna
+		    SET
+		        qna_ttl = #{qnaTtl},
+		        qna_con = #{qnaCon}
+		WHERE
+		    qna_cd =#{qnaCd}
+	</update>
+	
+	<delete id="deleteQ" parameterType="int">
+		delete from
+		qna
+		where qna_cd = #{qnaCd}
+	</delete>
+	
+	<delete id="deleteQrepl" parameterType="int">
+		delete from
+		qna_reply
+		where qna_cd = #{qnaCd}
+	</delete>
+	
+	<!--  전체 행의 수(total) -->
+	<select id="getTotal" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM qna q
+		WHERE 1 = 1
+		<include refid="where"></include>
+	</select>
+</mapper>

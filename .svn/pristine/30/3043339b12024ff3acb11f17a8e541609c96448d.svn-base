@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.ac.lms.mapper.RecordApplyMapper">
+	<select id="stuInfoList" parameterType="memberVO" resultType="memberVO">
+		SELECT  U.MEM_CD,
+		        U.MEM_NM,
+		        U.MEM_FNM,
+		        CASE WHEN SUBSTR(U.MEM_REG2, 1, 1) in ('1', '2') THEN '19'
+		             WHEN SUBSTR(U.MEM_REG2, 1, 1) in ('3', '4') THEN '20'
+		        END
+		            || SUBSTR(U.MEM_REG1, 1, 2) || '-' || SUBSTR(U.MEM_REG1, 3, 2) || '-' ||SUBSTR(U.MEM_REG1, 5, 2) ||
+		        CASE WHEN SUBSTR(U.MEM_REG2, 1, 1) IN ('1', '3') THEN ' (남)'
+		             WHEN SUBSTR(U.MEM_REG2, 1, 1) IN ('2', '4') THEN ' (여)'
+		        END MEM_REG1,
+		        U.MEM_TEL,
+		        SUBSTR(U.MEM_CD, 1, 4) || '-03-02 (입학)' MEM_ADDR1,
+		        NVL((
+		            SELECT  TO_CHAR(REC_DT, 'YYYY-MM-DD') || ' (' ||
+		            (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = REC_CATE) || ')' COMD_NM
+		             FROM    RECORD
+		             WHERE   REC_CD = U.MAX
+		                    ), ' - ') MEM_ADDR2,
+		                    U.COL_NM || ' ' || U.DEP_NM MEM_NME,
+		                    U.STU_YR || '학년 (' || U.STU_SEM || '학기)' MEM_ML
+		        FROM (
+		            SELECT  M.MEM_CD, M.MEM_NM, M.MEM_REG1, M.MEM_REG2, M.MEM_TEL,
+		            S.STU_YR, S.STU_SEM,
+		            C.COL_NM, D.DEP_NM,
+		            M.MEM_FNM,
+		            MAX(R.REC_CD) MAX, MIN(R.REC_CD) MIN
+					FROM    MEMBER M, STUDENT S, DEPARTMENT D, COLLEGE C, RECORD R
+					WHERE   M.MEM_CD = S.STU_CD
+					AND     S.DEP_CD = D.DEP_CD
+					AND     D.COL_CD = C.COL_CD
+					AND     S.STU_CD = R.STU_CD (+)
+					GROUP BY    M.MEM_CD, M.MEM_NM, M.MEM_REG1, M.MEM_REG2, M.MEM_TEL, M.MEM_FNM,
+					S.STU_YR, S.STU_SEM,
+					C.COL_NM, D.DEP_NM
+				) U
+				WHERE U.MEM_CD = #{memCd}
+	</select>
+	
+	<select id="history" parameterType="memberVO" resultType="lecApplyVO">
+		SELECT R.REC_YR || '/' || R.REC_SEM || '학기' AS lecaCate
+		      ,NVL(TO_CHAR(R.REC_PER),'-') || '학기' AS lecaNm
+		      ,TO_CHAR(R.REC_DT, 'YYYY-MM-DD') AS lecaCon
+		      ,(CASE WHEN REC_YN = 0 THEN '승인대기'
+		              WHEN REC_YN = 1 THEN '승인'
+		              WHEN REC_YN = 2 THEN '반려'
+		        END) AS lecaRoom
+		      ,C.COMD_NM AS lecaBook
+		      ,REC_RSN AS lecaNote
+		      ,NVL(TO_CHAR(REC_YDT, 'YYYY-MM-DD'),'-') AS lecaRsn
+               ,(CASE REC_PER WHEN 1 THEN TO_CHAR(R.REC_YR || '년도/' || R.REC_SEM || '학기')
+                 WHEN 2 THEN ( 
+                                CASE R.REC_SEM WHEN 1 THEN TO_CHAR(R.REC_YR || '년도/' || (R.REC_SEM + 1) || '학기')
+                                ELSE TO_CHAR((R.REC_YR + 1) || '년도/' || (R.REC_SEM - 1) || '학기')
+                                END
+                            )
+                WHEN 3 THEN (
+                                CASE R.REC_SEM WHEN 1 THEN TO_CHAR((R.REC_YR + 1) || '년도/' || R.REC_SEM || '학기')
+                                ELSE TO_CHAR((R.REC_YR + 1) || '년도/' || R.REC_SEM || '학기')
+                                END
+                            )
+                WHEN 4 THEN (
+                                CASE R.REC_SEM WHEN 1 THEN TO_CHAR((R.REC_YR + 1) || '년도/' || (R.REC_SEM + 1) || '학기')
+                                ELSE TO_CHAR((R.REC_YR + 2) || '년도/' || (R.REC_SEM - 1) || '학기')
+                                END
+                            )
+            END) AS lecaTt
+		FROM   RECORD R, STUDENT S, COMMON_DETAIL C
+		WHERE  S.STU_CD = #{memCd}
+		AND    S.STU_CD = R.STU_CD(+)
+		AND    C.COMD_CD(+) = R.REC_CATE
+		ORDER BY REC_DT DESC
+	</select>
+	
+	<select id="countResult" parameterType="memberVO" resultType="int">
+		SELECT COUNT(*) AS CNT
+		FROM RECORD
+		WHERE STU_CD = #{memCd}
+	</select>
+	
+	<select id="detailHisoty" parameterType="hashMap" resultType="RecordVO">
+		WITH U AS(
+	    SELECT (ROW_NUMBER() OVER(ORDER BY REC_DT DESC)) AS RNUM
+	          ,(SELECT EXTRACT(YEAR FROM SYSDATE) FROM DUAL) AS YEAR,
+	          (CASE WHEN EXTRACT(MONTH FROM SYSDATE) IN ('8','9','10','11','12','1') THEN '2'
+	                WHEN EXTRACT(MONTH FROM SYSDATE) IN ('2','3','4','5','6','7') THEN '1'
+	           END) AS HAK
+	          ,C.COMD_NM
+	          ,R.REC_RSN
+	          ,R.REC_DT
+	          ,R.REC_YR
+	          ,R.REC_SEM
+	          ,R.REC_PER
+	          ,(CASE REC_PER WHEN 1 THEN TO_CHAR(R.REC_YR || '년도/' || R.REC_SEM || '학기')
+	                 WHEN 2 THEN ( 
+	                                CASE R.REC_SEM WHEN 1 THEN TO_CHAR(R.REC_YR || '년도 / ' || (R.REC_SEM + 1) || '학기')
+	                                ELSE TO_CHAR((R.REC_YR + 1) || '년도/' || (R.REC_SEM - 1) || '학기')
+	                                END
+	                            )
+	                WHEN 3 THEN (
+	                                CASE R.REC_SEM WHEN 1 THEN TO_CHAR((R.REC_YR + 1) || '년도 / ' || R.REC_SEM || '학기')
+	                                ELSE TO_CHAR((R.REC_YR + 1) || '년도/' || R.REC_SEM || '학기')
+	                                END
+	                            )
+	                WHEN 4 THEN (
+	                                CASE R.REC_SEM WHEN 1 THEN TO_CHAR((R.REC_YR + 1) || '년도 / ' || (R.REC_SEM + 1) || '학기')
+	                                ELSE TO_CHAR((R.REC_YR + 2) || '년도/' || (R.REC_SEM - 1) || '학기')
+	                                END
+	                            )
+	            END) AS ENDEXPECT
+	    FROM   COMMON_DETAIL C, RECORD R, STUDENT S
+	    WHERE  S.STU_CD = #{memCd}
+	    AND    S.STU_CD = R.STU_CD(+)
+	    AND    C.COMD_CD = R.REC_CATE
+	)
+	SELECT U.*
+	FROM U
+	WHERE U.RNUM = #{rnum}
+	</select>
+	
+	<insert id="insertRecord" parameterType="hashMap">
+		INSERT INTO RECORD(REC_CD, STU_CD, REC_CATE, REC_YR, REC_SEM, REC_PER, REC_RSN, REC_DT, REC_YN)
+		VALUES(REC_SEQ.NEXTVAL, #{stuCd}, #{recCate}, (SELECT EXTRACT(YEAR FROM SYSDATE) FROM DUAL),
+		      (CASE WHEN EXTRACT(MONTH FROM SYSDATE) IN ('8','9','10','11','12','1') THEN '2'
+		            WHEN EXTRACT(MONTH FROM SYSDATE) IN ('2','3','4','5','6','7') THEN '1'
+		       END), #{recPer}, #{recRsn}, SYSDATE, 0)
+	</insert>
+	
+	<select id="counselCnt" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM   COUNSEL C
+		WHERE  C.STU_CD = #{stuCd}
+		AND    C.CNSL_CATE = #{cnslCate}
+		AND    EXTRACT(YEAR FROM C.CNSL_DT) = EXTRACT(YEAR FROM SYSDATE)
+	</select>
+	
+	<!-- 학생 졸업신청 졸업사정조회 -->
+	<select id="graduationSelect" parameterType="int" resultType="hashMap">
+		SELECT  NVL(MAX(CRD_L104), 0) GP,
+		        NVL(MAX(CRD_L103), 0) GS,
+		        ROUND(MAX(SCORE_L104) / 
+		            CASE WHEN MAX(CRD_L104) = 0 THEN 1
+		            ELSE MAX(CRD_L104)
+		            END
+		        ,2) GPDIV,
+		        ROUND(MAX(SCORE_L103) / 
+		            CASE WHEN MAX(CRD_L103) = 0 THEN 1
+		            ELSE MAX(CRD_L103)
+		            END
+		        ,2) GSDIV,
+		        NVL(MAX(CRD_L104), 0) + NVL(MAX(CRD_L103), 0) GCNT,
+		        NVL(MAX(SCORE_L104), 0) + NVL(MAX(SCORE_L103), 0) GSUM,
+		        ROUND((NVL(MAX(SCORE_L104), 0) + NVL(MAX(SCORE_L103), 0)) / 
+		            CASE WHEN (NVL(MAX(CRD_L104), 0) + NVL(MAX(CRD_L103), 0)) = 0 THEN 1
+		                 ELSE (NVL(MAX(CRD_L104), 0) + NVL(MAX(CRD_L103), 0))
+		            END 
+		        ,2) GDIV,
+		        NVL(MAX(CRD_L101), 0) JP,
+		        NVL(MAX(CRD_L102), 0) JS,
+		        ROUND(MAX(SCORE_L101) / 
+		            CASE WHEN MAX(CRD_L101) = 0 THEN 1
+		            ELSE MAX(CRD_L101)
+		            END
+		        ,2) JPDIV,
+		        ROUND(MAX(SCORE_L102) / 
+		            CASE WHEN MAX(CRD_L102) = 0 THEN 1
+		            ELSE MAX(CRD_L102)
+		            END
+		        ,2) JSDIV,
+		        NVL(MAX(CRD_L101), 0) + NVL(MAX(CRD_L102), 0) JCNT,
+		        NVL(MAX(SCORE_L101), 0) + NVL(MAX(SCORE_L102), 0) JSUM,
+		        ROUND((NVL(MAX(SCORE_L101), 0) + NVL(MAX(SCORE_L102), 0)) / 
+		            CASE WHEN (NVL(MAX(CRD_L101), 0) + NVL(MAX(CRD_L102), 0)) = 0 THEN 1
+		                 ELSE (NVL(MAX(CRD_L101), 0) + NVL(MAX(CRD_L102), 0))
+		            END     
+		        ,2) JDIV,
+		        ROUND((NVL(MAX(SCORE_L101), 0) + NVL(MAX(SCORE_L102), 0) + NVL(MAX(SCORE_L104), 0) + NVL(MAX(SCORE_L103), 0)) / 
+		            CASE WHEN (NVL(MAX(CRD_L101), 0) + NVL(MAX(CRD_L102), 0) + NVL(MAX(CRD_L104), 0) + NVL(MAX(CRD_L103), 0)) = 0 THEN 1
+		                 ELSE (NVL(MAX(CRD_L101), 0) + NVL(MAX(CRD_L102), 0) + NVL(MAX(CRD_L104), 0) + NVL(MAX(CRD_L103), 0))
+		            END 
+		        ,2) TOTALDIV
+		FROM(
+		    SELECT  DECODE(U.LECA_CATE, 'L101', U.LECA_CRD) CRD_L101,
+		            DECODE(U.LECA_CATE, 'L101', U.SL_SCORE) SCORE_L101,
+		            DECODE(U.LECA_CATE, 'L102', U.LECA_CRD) CRD_L102,
+		            DECODE(U.LECA_CATE, 'L102', U.SL_SCORE) SCORE_L102,
+		            DECODE(U.LECA_CATE, 'L103', U.LECA_CRD) CRD_L103,
+		            DECODE(U.LECA_CATE, 'L103', U.SL_SCORE) SCORE_L103,
+		            DECODE(U.LECA_CATE, 'L104', U.LECA_CRD) CRD_L104,
+		            DECODE(U.LECA_CATE, 'L104', U.SL_SCORE) SCORE_L104
+		    FROM (
+		        SELECT  A.LECA_CATE
+		                , NVL(B.LECA_CRD, 0) LECA_CRD
+		                , NVL(B.SL_SCORE, 0) SL_SCORE
+		        FROM 
+		        (
+		            SELECT   LECA_CATE
+		            FROM     LEC_APPLY
+		            GROUP BY LECA_CATE
+		        ) A,
+		        (   SELECT  LECA_CATE
+		                    , SUM(LECA_CRD) LECA_CRD
+		                    , SUM(SL_SCORE) SL_SCORE
+		            FROM (
+		                SELECT  S.LEC_CD
+		                        , A.LECA_CATE
+		                        , A.LECA_CRD
+		                        , LECA_CRD * (SELECT COMD_CON FROM COMMON_DETAIL WHERE COMD_CD = S.SL_SCORE) SL_SCORE
+		                FROM    LEC_APPLY A, STU_LEC S
+		                WHERE   A.LEC_CD = S.LEC_CD
+		                        AND S.STU_CD = #{stuCd}
+		                        AND S.SL_SCORE != 'G110'
+		            )
+		            GROUP BY LECA_CATE
+		        ) B
+		        WHERE   A.LECA_CATE = B.LECA_CATE (+)
+		        ORDER BY LECA_CATE ASC
+		    ) U
+		)
+	</select>
+	
+	<!-- 학생 졸업사정조회 중 배당 학점 -->
+	<select id="fixedGrade" parameterType="int" resultType="departmentVO">
+		SELECT D.DEP_MRC, D.DEP_MOC, D.DEP_CRC, D.DEP_COC
+		FROM DEPARTMENT D, STUDENT S 
+		WHERE STU_CD = #{stuCd}
+		AND S.DEP_CD = D.DEP_CD
+	</select>
+	
+	<!-- 학생 졸업신청 중 전공별 이수내역 -->
+	<select id="majorHistory" parameterType="int" resultType="lecApplyVO">
+		SELECT  LA.LECA_YR, LA.LECA_SEM || '학기' AS lecaBook, LA.SUB_CD, LA.LECA_NM,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE LA.LECA_CATE = COMD_CD) AS lecaCate,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE SL_SCORE = COMD_CD) AS lecaRoom,
+		         CASE WHEN (SELECT COMD_NM FROM COMMON_DETAIL WHERE SL_SCORE = COMD_CD) = 'F' THEN 'N'
+		              ELSE 'Y'
+		         END AS lecaCon
+		FROM STU_LEC SL, LECTURE L, LEC_APPLY LA
+		WHERE LA.LEC_CD = L.LEC_CD(+)
+		AND L.LEC_CD = SL.LEC_CD
+		AND SL.STU_CD = #{stuCd}
+		AND LA.LECA_CATE IN ('L101', 'L102')
+		ORDER BY LA.LECA_YR,LA.LECA_SEM, LA.LECA_CATE DESC
+	</select>
+	
+	<!-- 학생 졸업신청 중 교양별 이수내역 -->
+	<select id="culturalHistory" parameterType="int" resultType="lecApplyVO">
+		SELECT  LA.LECA_YR, LA.LECA_SEM || '학기' AS lecaBook, LA.SUB_CD, LA.LECA_NM,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE LA.LECA_CATE = COMD_CD) AS lecaCate,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE SL_SCORE = COMD_CD) AS lecaRoom,
+		         CASE WHEN (SELECT COMD_NM FROM COMMON_DETAIL WHERE SL_SCORE = COMD_CD) = 'F' THEN 'N'
+		              ELSE 'Y'
+		         END AS lecaRsn
+		FROM STU_LEC SL, LECTURE L, LEC_APPLY LA
+		WHERE LA.LEC_CD = L.LEC_CD(+)
+		AND L.LEC_CD = SL.LEC_CD
+		AND SL.STU_CD = #{stuCd}
+		AND LA.LECA_CATE IN ('L103', 'L104')
+		ORDER BY LA.LECA_YR,LA.LECA_SEM, LA.LECA_CATE DESC
+	</select>
+	
+	<!-- 성적일람표 성적출력 -->
+	<select id="jeonpil" parameterType="int" resultType="lecApplyVO">
+		SELECT  LA.LECA_YR, LA.LECA_SEM, LA.LECA_CRD, LA.LECA_NM,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE LA.LECA_CATE = COMD_CD) AS lecaCate,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE SL_SCORE = COMD_CD) AS lecaRoom
+		FROM STU_LEC SL, LECTURE L, LEC_APPLY LA
+		WHERE LA.LEC_CD = L.LEC_CD(+)
+		AND L.LEC_CD = SL.LEC_CD
+		AND SL.STU_CD = #{stuCd}
+		ORDER BY (CASE WHEN lecaCate = '전필' THEN 1
+               WHEN lecaCate = '전선' THEN 2
+               WHEN lecaCate = '교필' THEN 3
+               ELSE 4 END), lecaCate, LA.LECA_YR
+		
+	</select>
+	
+	<!-- 성적일람표 중 전선 출력 -->
+	<select id="jeonseon" parameterType="int" resultType="lecApplyVO">
+		SELECT  LA.LECA_YR, LA.LECA_SEM, LA.LECA_CRD, LA.LECA_NM,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE LA.LECA_CATE = COMD_CD) AS lecaCate,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE SL_SCORE = COMD_CD) AS lecaRoom
+		FROM STU_LEC SL, LECTURE L, LEC_APPLY LA
+		WHERE LA.LEC_CD = L.LEC_CD(+)
+		AND L.LEC_CD = SL.LEC_CD
+		AND SL.STU_CD = #{stuCd}
+		AND LA.LECA_CATE  = 'L102'	
+	</select>
+	
+	<!-- 졸업신청 INSERT -->
+	<insert id="graduationInsert" parameterType="int">
+		INSERT INTO RECORD(REC_CD, STU_CD, REC_CATE, REC_YR, REC_SEM, REC_PER, REC_RSN, REC_DT, REC_YN, REC_NRSN, REC_YDT)
+		VALUES(REC_SEQ.NEXTVAL, #{stuCd}, 'R104', (SELECT EXTRACT(YEAR FROM SYSDATE) FROM DUAL), 
+		      (CASE WHEN EXTRACT(MONTH FROM SYSDATE) IN ('8','9','10','11','12','1') THEN '2'
+		            WHEN EXTRACT(MONTH FROM SYSDATE) IN ('2','3','4','5','6','7') THEN '1' END), '', '', SYSDATE, 0, '', '')
+	</insert>
+	
+	<!-- 성적일람표 중 신상정보 출력 -->
+	<select id="stuMyInfo" parameterType="int" resultType="hashMap">
+		SELECT  M.MEM_CD, 
+		        M.MEM_NM, 
+		        (SELECT * FROM (SELECT (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = R.REC_CATE) AS REC_CATE FROM RECORD R WHERE R.STU_CD = #{stuCd} ORDER BY REC_YDT DESC) WHERE ROWNUM = 1) AS status,
+		        D.DEP_NM,
+		        C.COL_NM,
+		        S.STU_YR || '학년' AS year,
+		        S.STU_SEM || '학기' AS sem,
+		        (SELECT M.MEM_NM FROM MEMBER M, STUDENT S WHERE S.STU_PRO = M.MEM_CD AND S.STU_CD = #{stuCd}) AS proNm,
+		        (D.DEP_MRC + D.DEP_MOC + D.DEP_CRC + D.DEP_COC) AS gradeSum,
+		        (CASE WHEN EXTRACT(MONTH FROM SYSDATE) IN ('8','9','10','11','12','1') THEN EXTRACT(YEAR FROM SYSDATE)+1 || '학년도 전기'
+		              WHEN EXTRACT(MONTH FROM SYSDATE) IN ('2','3','4','5','6','7') THEN EXTRACT(YEAR FROM SYSDATE) || '학년도 후기'
+		           END) AS HAK
+		FROM    MEMBER M, RECORD R, DEPARTMENT D, STUDENT S, COLLEGE C
+		WHERE   M.MEM_CD = R.STU_CD
+		AND     S.STU_CD = M.MEM_CD
+		AND     D.DEP_CD = S.DEP_CD
+		AND     S.STU_CD = #{stuCd}
+		AND     C.COL_CD = D.COL_CD
+		GROUP BY MEM_CD, MEM_NM, D.DEP_NM, C.COL_NM, S.STU_YR, S.STU_SEM, (D.DEP_MRC + D.DEP_MOC + D.DEP_CRC + D.DEP_COC)
+	</select>
+	
+	<!-- 졸업신청 중 졸업신청한적있는지 count -->
+	<select id="graduateHistory" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+		FROM RECORD
+		WHERE STU_CD = #{stuCd}
+		AND     REC_CATE = 'R104'
+	</select>
+</mapper>

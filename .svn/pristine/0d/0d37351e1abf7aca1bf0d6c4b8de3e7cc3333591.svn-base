@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.ac.lms.mapper.PortletMapper">
+<!-- 포틀릿 화면) 저장버튼 눌렀을 경우 해당 위치 저장 -->
+<update id="updateSave" parameterType="hashMap">
+	UPDATE PORTLET
+	SET PO_X = #{poX}, PO_Y = #{poY}, PO_W = #{poW}, PO_H = #{poH}
+	WHERE MEM_CD = #{memCd}
+	AND   PO_CATE = #{poCate}
+</update>
+
+<!-- 포틀릿 화면) 삭제 포틀릿 YN 업데이트 -->
+<update id="updateDeleteYn" parameterType="hashMap">
+	UPDATE  PORTLET
+	SET     PO_YN = 0
+	WHERE   MEM_CD = #{memCd}
+	AND     PO_CATE IN 
+	<foreach collection="poCate" item="poCate" separator="," open="(" close=")">
+            #{ poCate }
+    </foreach>
+
+</update>
+
+<select id="portletSelect" parameterType="memberVO" resultType="portletVO">
+	SELECT PO_CD, MEM_CD, PO_CATE, PO_YN, PO_X, PO_Y, PO_W, PO_H
+	FROM PORTLET
+	WHERE MEM_CD = #{memCd}
+	AND PO_YN = 1
+</select>
+
+<!-- 포틀릿 설정) 보지않는 포틀릿 리스트 출력 -->
+<select id="portletNotSelect" parameterType="int" resultType="portletVO">
+	SELECT  PO_CD, MEM_CD, PO_CATE AS poGb,
+	        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = PO_CATE) PO_CATE,
+	        PO_YN, PO_X, PO_Y, PO_W, PO_H 
+	FROM PORTLET 
+	WHERE MEM_CD = #{memCd}
+	AND PO_YN = 0
+</select>	
+
+<!-- 포틀릿 설정) X눌렀을 경우 포틀릿 목록으로 돌아가기 -->
+<select id="deletePortlet" parameterType="String" resultType="hashMap">
+	SELECT COMD_NM 
+	FROM COMMON_DETAIL 
+	WHERE COM_CD = 'PC1' 
+	AND COMD_CD = #{comdCd}
+</select>
+
+<!-- 포틀릿 설정) 저장버튼 눌렀을 경우 설정 저장 -->
+<update id="settingSave" parameterType="hashMap">
+	UPDATE PORTLET
+	SET PO_X = #{poX}, PO_Y = #{poY}, po_yn = 1, PO_W = #{poW},
+		PO_H = (CASE WHEN #{poH} = 1 THEN 4
+			          WHEN #{poH} = 2 THEN 8
+			          WHEN #{poH} = 3 THEN 12
+			          ELSE 16 END) 
+	WHERE MEM_CD = #{memCd}
+	AND   PO_CATE = #{poCate}
+</update>
+
+<!-- 포틀릿 설정) 포틀릿 목록에 있는 것들은 YN 0으로 셋팅 -->
+<update id="settingPtlList" parameterType="hashMap">
+	UPDATE PORTLET
+	SET po_yn = 0
+	WHERE MEM_CD = #{memCd}
+	AND PO_CATE = #{poCate}
+</update>
+
+<!-- 포틀릿 설정) 포틀릿 보여주기 -->
+<select id="settingPortletSelect" parameterType="int" resultType="portletVO">
+	SELECT  PO_CD, 
+	        MEM_CD, 
+	        PO_CATE, 
+	        PO_YN, 
+	        PO_X, 
+	        PO_Y, 
+	        PO_W, 
+	        (CASE WHEN PO_H = 4 THEN 1
+	             WHEN PO_H = 8 THEN 2
+	             WHEN PO_H = 12 THEN 3
+	             ELSE 4
+	        END) AS PO_H
+	FROM PORTLET
+	WHERE MEM_CD = #{memCd}
+	AND PO_YN = 1
+</select>
+</mapper>

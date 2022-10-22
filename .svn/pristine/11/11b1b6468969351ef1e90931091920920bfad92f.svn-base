@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.ac.lms.mapper.RecordApprovalMapper">
+	<resultMap type="recordVO" id="recordMap">
+		<result property="recCd" column="REC_CD" />
+		<result property="stuCd" column="STU_CD" />
+		<result property="recCate" column="REC_CATE" />
+		<result property="comdNm" column="COMD_NM" />
+		<result property="recYr" column="REC_YR" />
+		<result property="recSem" column="REC_SEM" />
+		<result property="recYrnsem" column="REC_YRNSEM" />
+		<result property="recPer" column="REC_PER" />
+		<result property="endExpect" column="ENDEXPECT" />
+		<result property="recRsn" column="REC_RSN" />
+		<result property="recDt" column="REC_DT" />
+		<result property="recYn" column="REC_YN" />
+		<result property="trecTn" column="TREC_YN" />
+		<result property="recNrsn" column="REC_NRSN" />
+		<result property="recDts" column="REC_DTS" />
+		
+		<association property="memberVO" resultMap="memberMap"></association>
+	</resultMap>
+	
+	<resultMap type="memberVO" id="memberMap">
+		<result property="memCd" column="STU_CD" />
+		<result property="memNm" column="MEM_NM" />
+		<result property="memNme" column="MEM_NME" />
+		<result property="memTel" column="MEM_TEL" />
+		<result property="memZip" column="MEM_ZIP" />
+		<result property="memAddr1" column="MEM_ADDR1" />
+		<result property="memAddr2" column="MEM_ADDR2" />
+		<result property="memReg1" column="MEM_REG1" />
+		<result property="memReg2" column="MEM_REG2" />
+		<result property="memMl" column="MEM_ML" />
+		<result property="memPass" column="MEM_PASS" />
+		<result property="memBank" column="MEM_BANK" />
+		<result property="memDepo" column="MEM_DEPO" />
+		<result property="memAct" column="MEM_ACT" />
+		<result property="memFnm" column="MEM_FNM" />
+		<result property="memFpt" column="MEM_FPT" />
+		<result property="birth" column="BIRTH" />
+		<result property="first" column="FIRST" />
+		
+		<association property="studentVO" resultMap="studentVOMap"></association>
+	</resultMap>
+	
+	<resultMap type="studentVO" id="studentVOMap">
+		<result property="stuCd" column="STU_CD" />
+		<result property="depCd" column="DEP_CD" />
+		<result property="stuYr" column="STU_YR" />
+		<result property="stuSem" column="STU_SEM" />
+		<result property="stuMrc" column="STU_MRC" />
+		<result property="stuMoc" column="STU_MOC" />
+		<result property="stuCrc" column="STU_CRC" />
+		<result property="stuCoc" column="STU_COC" />
+		<result property="stuPro" column="STU_PRO" />
+		<result property="recCate" column="REC_CATE" />
+		
+		<association property="departmentVO" resultMap="departmentVOMap"></association>
+	</resultMap>
+	
+	<resultMap type="DepartmentVO" id="departmentVOMap">
+		<result property="depCd" column="DEP_CD" />
+		<result property="colCd" column="COL_CD" />
+		<result property="depNm" column="DEP_NM" />
+		<result property="depMrc" column="DEP_MRC" />
+		<result property="depMoc" column="DEP_MOC" />
+		<result property="depCrc" column="DEP_CRC" />
+		<result property="depCoc" column="DEP_COC" />
+		<result property="depMax" column="DEP_MAX" />
+		<result property="depTel" column="DEP_TEL" />
+	</resultMap>
+	
+	<!-- 
+		학적 신청 내역 불러오기
+		* 휴복학 : 0
+		* 졸업 : 1
+		* 자퇴 : 2
+	-->
+	<select id="getRecordList" parameterType="int" resultMap="recordMap">
+		SELECT R.REC_CD, R.STU_CD,
+		    (SELECT C.COMD_NM FROM COMMON_DETAIL C WHERE C.COMD_CD = R.REC_CATE) COMD_NM,
+		    R.REC_YR || '년도 ' || R.REC_SEM || '학기' REC_YRNSEM,
+		    (CASE R.REC_YN WHEN 0 THEN '승인대기'
+		                WHEN 1 THEN '승인'
+		                ELSE '반려'
+		                END)TREC_YN,
+            R.REC_DT, M.MEM_NM
+		FROM RECORD R INNER JOIN MEMBER M ON (R.STU_CD = M.MEM_CD)
+		                INNER JOIN STUDENT S ON (M.MEM_CD = S.STU_CD)
+		<if test="cate == 0">
+			WHERE R.REC_CATE = 'R101' OR R.REC_CATE = 'R102'
+		</if>
+		<if test="cate == 1">
+			WHERE R.REC_CATE = 'R103'
+		</if>
+		<if test="cate == 2">
+			WHERE R.REC_CATE = 'R104'
+		</if>
+		ORDER BY  REC_DT DESC
+	</select>
+	
+	<select id="recordDetail" parameterType="int" resultMap="recordMap">
+		SELECT R.STU_CD, 
+		    SUBSTR(M.MEM_CD, 1, 4) || '-03-01(최초입학)' AS first,
+		    (SELECT C.COMD_NM FROM COMMON_DETAIL C WHERE C.COMD_CD = R.REC_CATE) COMD_NM,
+		    R.REC_YR || '년도 ' || R.REC_SEM || '학기' REC_YRNSEM, 
+		    R.REC_PER, 
+		    (CASE R.REC_PER WHEN 1 THEN TO_CHAR(R.REC_YR || '년도 ' || R.REC_SEM || '학기')
+		                     WHEN 2 THEN ( 
+		                                    CASE R.REC_SEM WHEN 1 THEN TO_CHAR(R.REC_YR || '년도 ' || (R.REC_SEM + 1) || '학기')
+		                                    ELSE TO_CHAR((R.REC_YR + 1) || '년도 ' || (R.REC_SEM - 1) || '학기')
+		                                    END
+		                                )
+		                    WHEN 3 THEN (
+		                                    CASE R.REC_SEM WHEN 1 THEN TO_CHAR((R.REC_YR + 1) || '년도 ' || R.REC_SEM || '학기')
+		                                    ELSE TO_CHAR((R.REC_YR + 1) || '년도 ' || R.REC_SEM || '학기')
+		                                    END
+		                                )
+		                    WHEN 4 THEN (
+		                                    CASE R.REC_SEM WHEN 1 THEN TO_CHAR((R.REC_YR + 1) || '년도 ' || (R.REC_SEM + 1) || '학기')
+		                                    ELSE TO_CHAR((R.REC_YR + 2) || '년도 ' || (R.REC_SEM - 1) || '학기')
+		                                    END
+		                                )
+		                END) AS ENDEXPECT,
+		    R.REC_RSN, TO_CHAR(R.REC_DT, 'YYYY-MM-DD HH:MI:SS') REC_DTS,
+		    (CASE R.REC_YN WHEN 0 THEN '승인대기'
+		                WHEN 1 THEN '승인'
+		                ELSE '반려'
+		                END)TREC_YN,
+		    R.REC_NRSN, 
+		    M.MEM_NM,
+		    CASE WHEN SUBSTR(M.MEM_REG2, 1, 1) in ('1', '2') THEN '19'
+		            WHEN SUBSTR(M.MEM_REG2, 1, 1) in ('3', '4') THEN '20'
+		        END
+		    || SUBSTR(M.MEM_REG1, 1, 2) || '-' || SUBSTR(M.MEM_REG1, 3, 2) || '-' ||SUBSTR(M.MEM_REG1, 5, 2) BIRTH,
+		    M.MEM_TEL, S.STU_YR, S.STU_SEM, D.DEP_NM
+		FROM RECORD R INNER JOIN MEMBER M ON (R.STU_CD = M.MEM_CD)
+		                INNER JOIN STUDENT S ON (M.MEM_CD = S.STU_CD)
+		                INNER JOIN DEPARTMENT D ON (S.DEP_CD = D.DEP_CD)
+		WHERE REC_CD = #{ recCd }
+	</select>
+	
+	<!-- 학적 신청 승인 처리 -->
+	<update id="updateY" parameterType="int">
+		UPDATE RECORD
+		SET REC_YN = 1
+		WHERE REC_CD = #{ recCd }
+	</update>
+	
+	<!-- 학적 신청 반려 처리 -->
+	<update id="updateN" parameterType="recordVO">
+		UPDATE RECORD
+		SET REC_YN = 2, REC_NRSN = #{ recNrsn }
+		WHERE REC_CD = #{ recCd }
+	</update>
+</mapper>

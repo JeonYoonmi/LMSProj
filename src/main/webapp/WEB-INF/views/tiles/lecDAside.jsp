@@ -1,0 +1,127 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<style>
+.left-side-menu {
+	padding-top: 6%;
+}
+</style>
+<div class="left-side-menu">
+	<div class="h-100" id="left-side-menu-container" data-simplebar>
+		<!--- Sidemenu -->
+		<ul class="metismenu side-nav">
+            <c:if test="${ memSession.studentVO.stuCd != null }">
+            	<li class="side-nav-item">
+	                <a href="/studentLecture/stuList?stuCd=${ memSession.studentVO.stuCd }" class="side-nav-link">
+	                    	<span>대시보드 </span>
+	                </a>
+	            </li>
+            </c:if>
+			<c:if test="${ memSession.professorVO.proCd != null }">
+            	<li class="side-nav-item">
+	                <a href="/professorLecture/list?proCd=${ memSession.professorVO.proCd }" class="side-nav-link">
+	                    	대시보드 
+	                </a>
+	            </li>
+			</c:if>
+            
+			<li class="side-nav-item">
+                <a href="/professorLecture/lecApply?lecCd=${ data.lecCd }" class="side-nav-link">
+                    	강의계획서 
+                </a>
+            </li>
+            
+			<li class="side-nav-item">
+                <a href="/professorLecture/lecNoticeList?lecCd=${ data.lecCd }" class="side-nav-link">
+                    <span>공지사항 </span>
+                </a>
+            </li>
+            
+			<li class="side-nav-item">
+                <a href="/professorLecture/lecDataList?lecCd=${ data.lecCd }" class="side-nav-link">
+                    <span>강의자료실 </span>
+                </a>
+            </li>
+            
+            <c:if test="${ memSession.studentVO.stuCd != null }">
+				<li class="side-nav-item">
+	                <a href="/studentLecture/lecTaskList?lecCd=${ data.lecCd }" class="side-nav-link">
+	                    <span>과제 및 평가 </span>
+	                </a>
+	            </li>
+            </c:if>
+            
+            <c:if test="${ memSession.professorVO.proCd != null }">
+				<li class="side-nav-item">
+	                <a href="/professorLecture/lecTaskList?lecCd=${ data.lecCd }" class="side-nav-link">
+	                    <span>과제 및 평가 </span>
+	                </a>
+	            </li>
+            </c:if>
+            
+            <c:if test="${ memSession.professorVO.proCd != null }">
+				<li class="side-nav-item">
+	                <a href="/professorLecture/quiz?lecCd=${ data.lecCd }" class="side-nav-link">
+	                    <span>퀴즈 </span>
+	                </a>
+	            </li>
+            </c:if>
+            
+            <c:if test="${ memSession.studentVO.stuCd != null }">
+				<li class="side-nav-item">
+	                <a href="/studentLecture/quiz?lecCd=${ data.lecCd }" class="side-nav-link">
+	                    <span>퀴즈 </span>
+	                </a>
+	            </li>
+            </c:if>
+            
+            <c:if test="${ memSession.studentVO.stuCd != null }">
+				<li class="side-nav-item">
+	                <a href="/studentLecture/lecTotalScore?lecCd=${ data.lecCd }" class="side-nav-link">
+	                    <span>성적 </span>
+	                </a>
+	            </li>
+	        </c:if>
+            
+            <c:if test="${ memSession.professorVO.proCd != null }">
+				<li class="side-nav-item">
+	                <a href="/professorLecture/lecTotalScore?lecCd=${ data.lecCd }" class="side-nav-link">
+	                    <span>성적 </span>
+	                </a>
+	            </li>
+	        </c:if>
+	        
+            <c:if test="${ memSession.professorVO.proCd != null }">
+				<li class="side-nav-item">
+	                <a href="/professorLecture/lecAttendanceList?lecCd=${ data.lecCd }" class="side-nav-link">
+	                    <span>출결 </span>
+	                </a>
+	            </li>
+            </c:if>
+            <c:if test="${ memSession.studentVO.stuCd != null }">
+				<li class="side-nav-item">
+	                <a href="/studentLecture/lecAttendance?lecCd=${ data.lecCd }" class="side-nav-link">
+	                    <span>출결 </span>
+	                </a>
+	            </li>
+            </c:if>
+            
+			<li class="side-nav-item">
+                <a href="/studentLecture/lecQnaList?lecCd=${ data.lecCd }" class="side-nav-link">
+                    <span>질문게시판 </span>
+                </a>
+            </li>
+            
+			<li class="side-nav-item">
+                <a href="/professorLecture/lecAllStuList?lecCd=${ data.lecCd }" class="side-nav-link">
+                    <span>수강생목록 </span>
+                </a>
+            </li>
+		</ul>
+		<!-- End Sidebar -->
+
+		<div class="clearfix"></div>
+
+	</div>
+	<!-- Sidebar -left -->
+
+</div>

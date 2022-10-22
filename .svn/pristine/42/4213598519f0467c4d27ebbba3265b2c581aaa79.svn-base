@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.ac.lms.mapper.LectureApplyMapper">
+	<sql id="yrNsem">
+		<if test="yrNsem != null and !yrNsem.equals('')">
+			AND     U.LECA_YR || U.LECA_SEM = #{yrNsem}
+		</if>
+	</sql>
+
+	<select id="getInfo" parameterType="int" resultType="memberVO">
+		SELECT  M.MEM_CD
+		        , M.MEM_NM
+		        , CASE  WHEN SUBSTR(M.MEM_REG2, 1, 1) in ('1', '2') THEN '19'
+		                WHEN SUBSTR(M.MEM_REG2, 1, 1) in ('3', '4') THEN '20'
+		        END || 
+		        SUBSTR(M.MEM_REG1, 1, 2) || '-' ||
+		        SUBSTR(M.MEM_REG1, 3, 2) || '-' ||
+		        SUBSTR(M.MEM_REG1, 5, 2) ||
+		        CASE WHEN SUBSTR(M.MEM_REG2, 1, 1) IN ('1', '3') THEN ' (남)'
+		             WHEN SUBSTR(M.MEM_REG2, 1, 1) IN ('2', '4') THEN ' (여)'
+		        END MEM_REG1
+		        , M.MEM_TEL
+		        , C.COL_NM || ' ' || D.DEP_NM MEM_NME
+		        ,(SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = P.PRO_POS) MEM_ADDR1
+		        , CASE WHEN P.PRO_RET IS NULL THEN '재직' ELSE '퇴직' END MEM_ADDR2
+		        , M.MEM_FNM
+		FROM    PROFESSOR P, MEMBER M, DEPARTMENT D, COLLEGE C
+		WHERE   P.PRO_CD = M.MEM_CD
+		AND     P.DEP_CD = D.DEP_CD
+		AND     D.COL_CD = C.COL_CD
+		AND     P.PRO_CD = #{memCd}
+	</select>
+	
+	<select id="list" parameterType="hashMap" resultType="lecApplyVO">
+		SELECT  U.LECA_CD,
+		        U.PRO_CD,
+		        U.LECA_YR || '/' || U.LECA_SEM || '학기' LECA_CON,
+		        U.COL_NM || ' ' || U.DEP_NM LECA_NOTE,
+		        NVL(U.LECA_TRG, 0) LECA_TRG,
+		        U.SUB_CD,
+		        U.LECA_NM,
+		        NVL(U.LECA_MAX, 0) LECA_MAX,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = U.LECA_CATE) LECA_CATE,
+		        NVL(U.LECA_CRD, 0) LECA_CRD,
+		        NVL(TRIM(U.MON || ' ' || U.TUE || ' ' || U.WED || ' ' || U.THU || ' ' || U.FRI), ' - ')
+		        || ' (' || NVL(U.BLD_SNM, '아직 배정되지 않았습니다.') || ' ' || U.ROOM_NO || ')' LECA_TT,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = U.LECA_GRADE) LECA_GRADE,
+		        U.LECA_DT,
+		        CASE    WHEN U.LECA_YN = 0 THEN '승인대기'
+		                WHEN U.LECA_YN = 1 THEN '승인'
+		                WHEN U.LECA_YN = 2 THEN '반려'
+		        END LECA_BOOK
+		FROM
+		(
+		    SELECT  LECA_CD, SUB_CD, PRO_CD, LECA_CATE, LECA_YR, LECA_SEM, LECA_IMSI,
+		            LECA_NM, LECA_TRG, LECA_CRD, LECA_MAX, LECA_GRADE, LECA_YN, LECA_DT,
+		            COL_NM, DEP_NM, MEM_NM, BLD_SNM, ROOM_NO,
+		            MAX(MON) MON, MAX(TUE) TUE, MAX(WED) WED, MAX(THU) THU, MAX(FRI) FRI
+		    FROM    VW_APPLY
+		    GROUP BY    LECA_CD, SUB_CD, PRO_CD, LECA_CATE, LECA_YR, LECA_SEM, LECA_IMSI,
+		                LECA_NM, LECA_TRG, LECA_CRD, LECA_MAX, LECA_GRADE, LECA_YN, LECA_DT,
+		                COL_NM, DEP_NM, MEM_NM, BLD_SNM, ROOM_NO
+		) U
+		WHERE   U.PRO_CD = #{memCd}
+		AND     U.LECA_IMSI IS NULL
+		<include refid="yrNsem"></include>
+		ORDER BY U.LECA_CD DESC
+	</select>
+	
+	<select id="getYrNSem" parameterType="int" resultType="lecApplyVO">
+		SELECT  DISTINCT LECA_YR, LECA_SEM
+		FROM    LEC_APPLY
+		WHERE   PRO_CD = #{memCd}
+		AND		LECA_YN = 1
+		ORDER BY LECA_YR DESC, LECA_SEM DESC
+	</select>
+	
+	<select id="getCnt" parameterType="hashMap" resultType="int">
+		SELECT  COUNT(U.LECA_CD)
+		FROM    LEC_APPLY U
+		WHERE   U.PRO_CD = #{memCd}
+		<include refid="yrNsem"></include>
+		AND     U.LECA_IMSI IS NULL
+	</select>
+	
+	<select id="lecApplyInfo" parameterType="int" resultType="memberVO">
+		SELECT  M.MEM_NM,
+		        C.COL_NM || ' ' || D.DEP_NM MEM_ADDR1,
+		        D.DEP_TEL MEM_TEL,
+		        M.MEM_ML
+		FROM    MEMBER M, PROFESSOR P, DEPARTMENT D, COLLEGE C
+		WHERE   M.MEM_CD = P.PRO_CD
+		AND     P.DEP_CD = D.DEP_CD
+		AND     D.COL_CD = C.COL_CD
+		AND     M.MEM_CD = #{memCd}
+	</select>
+	
+	<select id="subList" resultType="subjectVO">
+		SELECT  SUB_CD, SUB_NM
+		FROM    SUBJECT
+		ORDER BY SUB_NM
+	</select>
+	
+	<select id="getMaxLecaCd" resultType="int">
+		SELECT  MAX(LECA_CD)
+		FROM    LEC_APPLY
+	</select>
+	
+	<insert id="tempSubmit" parameterType="hashMap">
+		<selectKey resultType="int" keyProperty="lecaCd" order="AFTER">
+			SELECT LECAPPLY_SEQ.CURRVAL FROM DUAL
+		</selectKey>
+		INSERT INTO lec_apply (
+		    leca_cd, sub_cd, pro_cd, leca_cate,
+		    leca_yr, leca_sem, leca_nm, leca_con, leca_trg,
+		    leca_crd, leca_per, leca_max, leca_book, leca_note,
+		    leca_dt, leca_grade, leca_imsi, leca_tt
+		) VALUES (
+		    LECAPPLY_SEQ.NEXTVAL, #{subCd}, #{proCd}, #{lecaCate},
+		    #{lecaYr}, #{lecaSem}, #{lecaNm}, #{lecaCon}, #{lecaTrg},
+		    #{lecaCrd}, #{lecaCrd}, #{lecaMax}, #{lecaBook}, #{lecaNote},
+		    SYSDATE, #{lecaGrade}, 1, #{lecaTt}
+		)
+	</insert>
+	
+	<insert id="criteriaSubmit" parameterType="hashMap">
+		INSERT INTO criteria (
+		    crtr_cd, 
+		    leca_cd, 
+		    crtr_mp, crtr_fp, crtr_tp, crtr_ap, crtr_qp
+		) VALUES (
+		    (SELECT MAX(CRTR_CD) + 1 FROM CRITERIA),
+		    #{lecaCd}, 
+		    #{crtrMp}, #{crtrFp}, #{crtrTp}, #{crtrAp}, #{crtrQp}
+		)
+	</insert>
+	
+	<insert id="weekPlanSubmit" parameterType="hashMap">
+		INSERT INTO WEEKPLAN(WP_NO, LECA_CD, WP_CON)
+		VALUES(
+		    #{wpNo}, #{lecaCd}, #{wpCon}
+		)
+	</insert>
+	
+	<select id="weekPlanCount" parameterType="int" resultType="int">
+		SELECT COUNT(WP_NO) CNT
+		FROM WEEKPLAN
+		WHERE LECA_CD = #{lecaCd}
+	</select>
+	
+	<select id="tempList" parameterType="int" resultType="lecApplyVO">
+		SELECT  A.LECA_CD,
+		        A.PRO_CD,
+		        A.LECA_YR || '/' || LECA_SEM || '학기' LECA_CON,
+		        C.COL_NM || ' ' || D.DEP_NM LECA_NOTE,
+		        A.LECA_TRG,
+		        A.LECA_CRD,
+		        A.SUB_CD,
+		        A.LECA_NM,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = A.LECA_CATE) LECA_CATE,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = A.LECA_GRADE) LECA_GRADE,
+		        TO_CHAR(A.LECA_DT, 'YY/MM/DD AM HH:MI:SS') LECA_ROOM
+		FROM    LEC_APPLY A, PROFESSOR P, DEPARTMENT D, COLLEGE C
+		WHERE   A.PRO_CD = P.PRO_CD
+		AND     P.DEP_CD = D.DEP_CD
+		AND     D.COL_CD = C.COL_CD
+		AND     A.PRO_CD = #{memCd}
+		AND     A.LECA_IMSI = 1
+		ORDER BY A.LECA_CD DESC
+	</select>
+	
+	<select id="getTempLecApplyVO" parameterType="int" resultType="lecApplyVO">
+		SELECT  *
+		FROM    LEC_APPLY
+		WHERE   LECA_CD = #{lecaCd}
+	</select>
+	
+	<select id="getTempCriteriaVO" parameterType="int" resultType="criteriaVO">
+		SELECT  *
+		FROM    CRITERIA
+		WHERE   LECA_CD = #{lecaCd}
+	</select>
+	
+	<select id="getTempWeekPlanVO" parameterType="int" resultType="weekplanVO">
+		SELECT  *
+		FROM    WEEKPLAN
+		WHERE   LECA_CD = #{lecaCd}
+		ORDER BY WP_NO
+	</select>
+	
+	<update id="tempUpdate" parameterType="hashMap">
+		UPDATE LEC_APPLY
+		SET
+		    sub_cd = #{subCd}, leca_cate = #{lecaCate}, leca_yr = #{lecaYr}, leca_sem = #{lecaSem}, leca_nm = #{lecaNm},
+		    leca_con = #{lecaCon}, leca_trg = #{lecaTrg}, leca_crd = #{lecaCrd}, leca_per = #{lecaCrd}, leca_max = #{lecaMax},
+		    leca_book = #{lecaBook}, leca_note = #{lecaNote}, leca_dt = SYSDATE, leca_grade = #{lecaGrade}, leca_tt = #{lecaTt}
+		WHERE LECA_CD = #{lecaCd}
+	</update>
+	
+	<update id="criteriaUpdate" parameterType="hashMap">
+		UPDATE criteria
+		SET
+		    crtr_mp = #{crtrMp},
+		    crtr_fp = #{crtrFp},
+		    crtr_tp = #{crtrTp},
+		    crtr_ap = #{crtrAp},
+		    crtr_qp = #{crtrQp}
+		WHERE LECA_CD = #{lecaCd}
+	</update>
+	
+	<update id="weekPlanUpdate" parameterType="hashMap">
+		UPDATE  WEEKPLAN
+		SET     WP_CON = #{wpCon}
+		WHERE   LECA_CD = #{lecaCd}
+		AND     WP_NO = #{wpNo}
+	</update>
+	
+	<delete id="tempDelete" parameterType="int">
+		DELETE LEC_APPLY WHERE LECA_CD = #{lecaCd}
+	</delete>
+	
+	<delete id="criteriaDelete" parameterType="int">
+		DELETE CRITERIA WHERE LECA_CD = #{lecaCd}
+	</delete>
+	
+	<delete id="weekPlanDelete" parameterType="int">
+		DELETE WEEKPLAN WHERE LECA_CD = #{lecaCd}
+	</delete>
+	
+	<insert id="lecApplySubmit" parameterType="hashMap">
+		INSERT INTO lec_apply (
+		    leca_cd, sub_cd, pro_cd, leca_cate,
+		    leca_yr, leca_sem, leca_nm, leca_con, leca_trg,
+		    leca_crd, leca_per, leca_max, leca_book, leca_note,
+		    leca_dt, leca_grade, leca_yn, leca_tt
+		) VALUES (
+		    LECAPPLY_SEQ.NEXTVAL, #{subCd}, #{proCd}, #{lecaCate},
+		    #{lecaYr}, #{lecaSem}, #{lecaNm}, #{lecaCon}, #{lecaTrg},
+		    #{lecaCrd}, #{lecaCrd}, #{lecaMax}, #{lecaBook}, #{lecaNote},
+		    SYSDATE, #{lecaGrade}, 0, #{lecaTt}
+		)
+	</insert>
+	
+	<update id="tempUpdateSubmit" parameterType="hashMap">
+		UPDATE LEC_APPLY
+		SET
+		    sub_cd = #{subCd}, leca_cate = #{lecaCate}, leca_yr = #{lecaYr}, leca_sem = #{lecaSem}, leca_nm = #{lecaNm},
+		    leca_con = #{lecaCon}, leca_trg = #{lecaTrg}, leca_crd = #{lecaCrd}, leca_per = #{lecaCrd}, leca_max = #{lecaMax},
+		    leca_book = #{lecaBook}, leca_note = #{lecaNote}, leca_dt = SYSDATE, leca_grade = #{lecaGrade}, leca_tt = #{lecaTt},
+		    leca_imsi = null, leca_yn = 0
+		WHERE LECA_CD = #{lecaCd}
+	</update>
+	
+	<select id="ptlProTimeTable" parameterType="int" resultType="lecApplyVO">
+		SELECT  DISTINCT LECA_YR, LECA_SEM
+		FROM    LEC_APPLY
+		WHERE   PRO_CD = #{memCd}
+		ORDER BY LECA_YR DESC, LECA_SEM DESC
+	</select>
+	
+	<select id="ptlProTimeTableColor" parameterType="hashMap" resultType="lecApplyVO">
+		SELECT  A.SUB_CD, 
+		        A.LECA_NM,
+		        B.BLD_SNM LECA_BOOK, 
+		        R.ROOM_NO LECA_NOTE, 
+		        CASE WHEN T.TM_CD LIKE 'MON%' THEN 1
+		        WHEN T.TM_CD LIKE 'TUE%' THEN 2
+		        WHEN T.TM_CD LIKE 'WED%' THEN 3
+		        WHEN T.TM_CD LIKE 'THU%' THEN 4
+		        ELSE 5
+		        END LECA_CD,
+		        TO_NUMBER(SUBSTR(T.TM_CD, 4, 2)) LEC_CD,
+		        M.MEM_NM LECA_CATE
+		FROM    TIMETABLE T, LEC_APPLY A, BUILDING B, ROOM R, MEMBER M
+		WHERE   T.LECA_CD = A.LECA_CD
+		AND     A.LECA_ROOM = B.BLD_CD(+)
+		AND     A.LECA_UNIT = R.ROOM_CD(+)
+		AND     A.PRO_CD = M.MEM_CD
+		AND     A.PRO_CD = #{memCd}
+		AND     A.LECA_YR || A.LECA_SEM = #{yrNsem}
+		ORDER BY A.LECA_CD,
+		    (
+		        CASE WHEN T.TM_CD LIKE 'MON%' THEN 1
+		        WHEN T.TM_CD LIKE 'TUE%' THEN 2
+		        WHEN T.TM_CD LIKE 'WED%' THEN 3
+		        WHEN T.TM_CD LIKE 'THU%' THEN 4
+		        ELSE 5 END
+		    ), T.TM_CD
+	</select>
+</mapper>

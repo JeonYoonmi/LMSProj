@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.ac.lms.mapper.PaymentMapper">
+
+<!-- 관리자의 등록금 납부여부 조회 -->
+<select id="adminPaymentList" resultType="hashmap">
+<![CDATA[
+SELECT 
+A.PAY_CD
+, A.STU_CD
+, CASE WHEN MOD(A.PAY_SEM,2) =1  THEN TRUNC(A.PAY_SEM/2)+1 ELSE TRUNC(A.PAY_SEM/2) END ||'학년'|| CASE WHEN MOD(A.PAY_SEM,2) =1 THEN 1 ELSE 2 END ||'학기' AS PAY_SEM
+, A.PAY_DT
+, CASE WHEN A.PAY_DT IS NOT NULL THEN TO_CHAR(A.PAY_DT,'YYYY')||'년'||CASE WHEN TO_NUMBER(TO_CHAR(A.PAY_REG,'MM'))>=3 AND
+  TO_NUMBER(TO_CHAR(A.PAY_DT,'MM'))<= 8 THEN 1 ELSE 2 END ||'학기' 
+WHEN A.PAY_DT IS NULL THEN TO_CHAR(SYSDATE,'YYYY')||'년'||CASE WHEN TO_NUMBER(TO_CHAR(SYSDATE,'MM'))>=3 AND
+  TO_NUMBER(TO_CHAR(A.PAY_DT,'MM'))<= 8 THEN 1 ELSE 2 END ||'학기' 
+END AS PAY_DT2 
+, TO_CHAR(A.PAY_AMT, 'FM999,999,999') PAY_AMT
+, CASE WHEN A.PAY_YN = 1 THEN '완납' ELSE '미납' END AS PAY_YN 
+, (SELECT TO_CHAR(NVL(SUM(B.SCLH_AMT),0),'FM999,999,999') FROM SCL_HISTORY B WHERE A.STU_CD = B.STU_CD AND A.PAY_SEM = (B.SCLH_SEM+1)) SCHL_AMT
+, C.MEM_NM
+, F.COL_NM
+, TO_CHAR(F.COL_FEE,'FM9,999,999') COL_FEE
+FROM 
+PAYMENT A  , MEMBER C, STUDENT D, DEPARTMENT E, COLLEGE F 
+WHERE 
+A.STU_CD = C.MEM_CD
+AND D.STU_CD = A.STU_CD
+AND E.DEP_CD = D.DEP_CD
+AND F.COL_CD = E.COL_CD
+ORDER BY A.PAY_YN ASC,  A.PAY_DT DESC, D.DEP_CD ASC, D.STU_YR ASC, D.STU_SEM ASC, D.STU_CD ASC, A.PAY_SEM DESC
+]]>
+</select>
+
+<!-- 학생의 등록금 납부내역 조회-->
+<select id="stuPaymentList" resultType = "paymentVO" parameterType="studentVO">
+<![CDATA[
+SELECT 
+A.PAY_CD
+, TO_CHAR(A.PAY_REG,'YYYY')||'년'|| CASE WHEN TO_NUMBER(TO_CHAR(A.PAY_REG,'MM'))>=3 AND
+  TO_NUMBER(TO_CHAR(A.PAY_DT,'MM'))<= 8 THEN 1 ELSE 2 END ||'학기' AS PAY_DT
+, A.PAY_AMT
+, NVL(B.SCLH_AMT,0) AS STU_CD
+, (SELECT E.COL_FEE FROM DEPARTMENT D, COLLEGE E WHERE D.COL_CD = E.COL_CD AND D.DEP_CD = #{depCd}) AS PAY_SEM
+, PAY_YN
+FROM 
+PAYMENT A LEFT OUTER JOIN SCL_HISTORY B ON(A.STU_CD = B.STU_CD AND A.PAY_SEM = (B.SCLH_SEM+1)), STUDENT C
+WHERE 
+A.STU_CD = #{stuCd}
+AND A.STU_CD = C.STU_CD
+ORDER BY A.PAY_SEM DESC
+]]>
+
+</select>
+
+<!-- 학생의 학부 등록금 가져오기 -->
+<select id="fee" resultType="int" parameterType="int">
+SELECT COL_FEE 
+FROM COLLEGE 
+WHERE COL_CD = (SELECT COL_CD FROM DEPARTMENT WHERE DEP_CD = #{depCd})
+</select>
+
+<!-- 학생의 등록금 납부 중복을 막기 위한 납부 여부 불러오기 -->
+<select id ="billCount" resultType="int" parameterType="int">
+SELECT COUNT(PAY_YN) 
+FROM PAYMENT 
+WHERE PAY_YN = 0 AND STU_CD = #{stuCd}
+</select>
+
+<!-- 등록금 고지서 출력 -->
+<select id="bill" resultType="hashmap" parameterType="int">
+<![CDATA[
+SELECT 
+A.STU_CD
+, C.MEM_NM
+, A.PAY_CD
+, E.DEP_NM
+, D.STU_YR
+, C.MEM_ML
+, TO_CHAR(SYSDATE,'YYYY')||'년'|| CASE WHEN TO_NUMBER(TO_CHAR(A.PAY_REG,'MM'))>=3 AND
+  TO_NUMBER(TO_CHAR(A.PAY_REG,'MM'))<= 8 THEN 1 ELSE 2 END ||'학기' AS PAY_DT2
+, TO_CHAR(A.PAY_AMT, 'FM999,999,999') PAY_AMT
+, TO_CHAR(F.COL_FEE, 'FM999,999,999') COL_FEE
+, CASE WHEN (SELECT NVL(SUM(SCLH_AMT),0) 
+FROM SCL_HISTORY 
+WHERE STU_CD = #{stuCd} 
+AND TO_CHAR(SCLH_DT,'YYYY-MM') = TO_CHAR(SYSDATE,'YYYY-MM')) > F.COL_FEE THEN TO_CHAR(F.COL_FEE,'FM999,999,999') 
+ELSE (SELECT TO_CHAR(NVL(SUM(SCLH_AMT),0),'FM999,999,999') 
+FROM SCL_HISTORY 
+WHERE STU_CD = #{stuCd}
+AND TO_CHAR(SCLH_DT,'YYYY-MM') = TO_CHAR(SYSDATE,'YYYY-MM'))
+END  SCLH_AMT
+FROM 
+PAYMENT A, MEMBER C, STUDENT D, DEPARTMENT E, COLLEGE F 
+WHERE 
+A.STU_CD = C.MEM_CD
+AND D.STU_CD = A.STU_CD
+AND E.DEP_CD = D.DEP_CD
+AND F.COL_CD = E.COL_CD
+AND A.STU_CD = #{stuCd}
+AND A.PAY_YN = 0
+]]>
+</select>
+
+<!-- 등록금 고지서 출력시 가져올 장학금 조회 -->
+<select id="billSch" resultType="int" parameterType="int">
+SELECT NVL(MAX(C.SCLH_AMT),0) SCLH_AMT
+FROM SCL_HISTORY C  
+WHERE (SELECT D.STU_SEM FROM STUDENT D WHERE D.STU_CD = #{stuCd}) = C.SCLH_SEM AND C.STU_CD = #{stuCd}
+</select>
+
+<!-- 학과명 가져오기 -->
+<select id="depName" parameterType="int" resultType="String">
+SELECT DEP_NM 
+FROM DEPARTMENT
+WHERE DEP_CD = #{depCd}
+</select>
+
+<!-- 재학중인 학생 리스트 가져오기 -->
+<select id="attendList" resultType="hashmap">
+SELECT 
+A.STU_CD
+,CASE WHEN (SELECT COUNT(STU_CD) FROM PAYMENT 
+WHERE PAY_YN = 0 
+AND A.STU_CD = STU_CD
+AND CASE WHEN TO_NUMBER(TO_CHAR(PAY_REG,'MM'))BETWEEN 3 AND 8 THEN 1 ELSE 2 END = 
+    CASE WHEN TO_NUMBER(TO_CHAR(SYSDATE,'MM'))BETWEEN 3 AND 8 THEN 1 ELSE 2 END
+AND TO_CHAR(PAY_REG,'YYYY')= TO_CHAR(SYSDATE,'YYYY')
+) = 1 
+THEN '고지' 
+WHEN (SELECT COUNT(STU_CD) FROM PAYMENT 
+WHERE PAY_YN = 1 
+AND A.STU_CD = STU_CD
+AND CASE WHEN TO_NUMBER(TO_CHAR(PAY_REG,'MM'))BETWEEN 3 AND 8 THEN 1 ELSE 2 END = 
+    CASE WHEN TO_NUMBER(TO_CHAR(SYSDATE,'MM'))BETWEEN 3 AND 8 THEN 1 ELSE 2 END
+AND TO_CHAR(PAY_REG,'YYYY')= TO_CHAR(SYSDATE,'YYYY')
+) = 1 
+THEN '고지'
+ELSE '-' END AS NOTICE
+, A.STU_YR
+, CASE WHEN MOD(A.STU_SEM,2) =1 THEN 1 ELSE 2 END  AS STU_SEM
+, B.MEM_NM
+, D.COL_NM
+, C.DEP_NM
+, D.COL_NM
+, C.DEP_CD
+FROM STUDENT A, MEMBER B , DEPARTMENT C, COLLEGE D
+WHERE 
+A.STU_CD = B.MEM_CD 
+AND A.REC_CATE = 'R106' 
+AND C.DEP_CD = A.DEP_CD 
+AND D.COL_CD = C.COL_CD
+ORDER BY NOTICE ASC, A.DEP_CD ASC, A.STU_YR ASC, A.STU_SEM ASC, A.STU_CD ASC
+</select>
+
+<!-- 등록금 고지하기 -->
+<update id="insert" parameterType="java.util.List">
+	INSERT INTO PAYMENT(
+	 PAY_CD
+    , STU_CD
+    , PAY_SEM
+    , PAY_DT
+    , PAY_AMT
+    , PAY_YN
+    , PAY_REG
+	)
+	SELECT PAYMENT_SEQ.NEXTVAL AS payCd
+	,T.*
+	FROM(
+    <foreach collection="list" item="item" index="index" separator="union all">
+     SELECT
+     #{item.stuCd}
+      ,(SELECT MAX(STU_SEM)+1 FROM STUDENT WHERE STU_CD =#{item.stuCd})
+      ,NULL
+      ,CASE WHEN (SELECT A.COL_FEE -(SELECT NVL(MAX(SUM(C.SCLH_AMT)),0) FROM SCL_HISTORY C 
+		WHERE (SELECT D.STU_SEM FROM STUDENT D WHERE D.STU_CD = #{item.stuCd}) = C.SCLH_SEM AND C.STU_CD = #{item.stuCd} GROUP BY C.STU_CD)
+		FROM COLLEGE A, DEPARTMENT B 
+		WHERE B.DEP_CD = #{item.depCd}
+		AND A.COL_CD = B.COL_CD)<![CDATA[<]]> 0 THEN 0 ELSE  (SELECT A.COL_FEE -(SELECT NVL(MAX(SUM(C.SCLH_AMT)),0) FROM SCL_HISTORY C 
+		WHERE (SELECT D.STU_SEM FROM STUDENT D WHERE D.STU_CD = #{item.stuCd}) = C.SCLH_SEM AND C.STU_CD = #{item.stuCd} GROUP BY C.STU_CD)
+		FROM COLLEGE A, DEPARTMENT B 
+		WHERE B.DEP_CD = #{item.depCd}
+		AND A.COL_CD = B.COL_CD) END
+      ,0
+      ,SYSDATE
+      FROM DUAL
+    </foreach>
+    )T
+</update>
+
+<!-- 카드로 등록금 결제하기 -->
+<update id ="pay" parameterType="int">
+UPDATE PAYMENT
+SET 
+PAY_DT = SYSDATE
+,PAY_YN = 1 
+WHERE PAY_CD = #{payCd}
+</update>
+
+<!-- 해당 학기의 학생 등록금 납부증명서 상세내역 -->
+<select id="payDetail" parameterType="hashmap" resultType="hashmap">
+<![CDATA[
+SELECT 
+TO_CHAR(A.PAY_DT,'YYYY')||'년'|| CASE WHEN TO_NUMBER(TO_CHAR(A.PAY_DT,'MM'))>=3 AND
+TO_NUMBER(TO_CHAR(A.PAY_DT,'MM'))<= 8 THEN 1 ELSE 2 END ||'학기' AS PAY_DT2
+, TO_CHAR(A.PAY_DT,'YYYY"년"MM"월"DD"일') AS PAY_DT
+, TO_CHAR(A.PAY_AMT, 'FM999,999,999') PAY_AMT
+, TO_CHAR(NVL(B.SCLH_AMT,0),'FM999,999,999') AS SCLH_AMT
+, (SELECT TO_CHAR(E.COL_FEE , 'FM999,999,999') FROM DEPARTMENT D, COLLEGE E WHERE D.COL_CD = E.COL_CD AND D.DEP_CD = #{depCd}) AS COL_FEE
+, CASE WHEN PAY_SEM < 3 THEN 1 
+WHEN PAY_SEM < 5 THEN 2 
+WHEN PAY_SEM < 7 THEN 3
+ELSE 4 END AS PAY_SEM
+, E.COL_NM 
+, D.DEP_NM
+, A.STU_CD
+FROM 
+PAYMENT A LEFT OUTER JOIN SCL_HISTORY B ON(A.STU_CD = B.STU_CD AND A.PAY_SEM = (B.SCLH_SEM+1)), STUDENT C, DEPARTMENT D, COLLEGE E
+WHERE 
+A.STU_CD = #{stuCd}
+AND A.STU_CD = C.STU_CD
+AND A.PAY_YN = 1 
+AND C.DEP_CD = D.DEP_CD
+AND D.COL_CD = E.COL_CD
+AND PAY_CD = #{payCd}
+ORDER BY PAY_SEM DESC
+]]>
+</select>
+
+ <!-- 등록금 리스트 -->
+  <select id="collegeFeeList" resultType="hashmap">
+  SELECT 
+  DEP_NM
+  , COL_NM
+  , COL_FEE 
+  FROM DEPARTMENT D
+  , COLLEGE C 
+  WHERE C.COL_CD = D.COL_CD 
+  AND COL_FEE IS NOT NULL
+  ORDER BY DEP_CD
+  </select>
+  
+  <!-- 올해 납부되어야 할 등록금 총액과 현재 납부된 등록금 총액 -->
+  <select id="sumCollegeFee" resultType="paymentVO">
+ 	SELECT (SELECT SUM(C.COL_FEE) FROM STUDENT A INNER JOIN DEPARTMENT B ON A.DEP_CD = B.DEP_CD INNER JOIN COLLEGE C ON C.COL_CD = B.COL_CD
+	WHERE REC_CATE = 'R106') AS PAY_CD, 
+	(
+	SELECT SUM(PAY_AMT) FROM PAYMENT 
+	WHERE PAY_YN = 1
+	AND CASE WHEN TO_NUMBER(TO_CHAR(PAY_REG,'MM'))BETWEEN 3 AND 8 THEN 1 ELSE 2 END = 
+	    CASE WHEN TO_NUMBER(TO_CHAR(SYSDATE,'MM'))BETWEEN 3 AND 8 THEN 1 ELSE 2 END
+	AND TO_CHAR(PAY_REG,'YYYY')= TO_CHAR(SYSDATE,'YYYY')
+	) AS PAY_AMT 
+	FROM DUAL
+  </select>
+
+</mapper>
+
+

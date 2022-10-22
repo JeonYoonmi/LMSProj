@@ -1,0 +1,150 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<script type="text/javascript" src="/resources/js/tui-grid.js"></script>
+<script type="text/javascript" src="/resources/js/spinner.js"></script>
+<link rel="stylesheet" href="/resources/css/tui-grid.css"
+	type="text/css">
+<script type="text/javascript" src="/resources/js/management.js"></script>
+<style>
+#grid {
+	display: inline-block;
+	float: left;
+	min-width: 700px;
+}
+
+.stuDetail {
+	background-color: #eee;
+	border: 1px solid #999;
+}
+
+tr {
+	min-width: 300px;
+	height: 49px;
+}
+
+th {
+	width: 15%;
+	text-align: right;
+	padding: 3px;
+	background: #f4f7fd;
+}
+
+td {
+	width: 25%;
+	padding: 3px;
+	background: white;
+}
+
+
+input[type="text"] {
+	width: 100%;
+	height: 40px;
+}
+
+#recNrsn {
+	resize: none;
+}
+
+#manageStuListRound {
+	width: 97%;
+	margin-left: auto;
+	margin-right: auto;
+}
+</style>
+<script type="text/javascript" defer="defer">
+	$(function() {
+		//로딩중 화면 띄우기
+		loadingWithMask();
+
+		getStuList();
+	});
+</script>
+<div id="manageStuListRound">
+	<div>
+		<i class="mdi mdi-home" style="font-size: 1.3em"></i> <i
+			class="dripicons-chevron-right"></i> 학생관리 <i
+			class="dripicons-chevron-right"></i> <span style="font-weight: bold;">학생목록조회</span>
+	</div>
+	<br>
+	<br>
+	<div style="float : left;display:inline-block;">
+		<p id="headL">
+			<i class="mdi mdi-record-circle" style="color: #001353;float:left;"></i>&ensp;학생목록
+			<span style="float: right;">[총 <span id="spancnt"
+				style="color: #001353;"></span>건]
+			</span>
+		</p>
+		<div id="grid" style="clear:both;"></div>
+	</div>
+	<div style="float:right;display:inline-block;width:52%;">
+	<p id="headD">
+		<i class="mdi mdi-record-circle" style="color: #001353;float:left;"></i>&ensp;학생
+		상세정보
+	</p>
+	<div class="detailDiv" style="clear:both;">
+			<table class="stuDetail" style="width : 100%;">
+				<tr>
+					<th>No</th>
+					<td><input type="text" id="no" readonly></td>
+					<th rowspan="4" style="padding-bottom: 150px;">사진</th>
+					<td rowspan="4" id="memFnm"><input type="text"
+						style="height: 188px;" readonly></td>
+				</tr>
+				<tr>
+					<th>소속</th>
+					<td><input type="text" id="colDepNm" readonly></td>
+				</tr>
+				<tr>
+					<th>학번</th>
+					<td><input type="text" id="memCd" readonly></td>
+				</tr>
+				<tr>
+					<th>이름(한글/영문)</th>
+					<td><input type="text" id="memNmNE" readonly></td>
+				</tr>
+				<tr>
+					<th>학년(재학학기 수)</th>
+					<td><input type="text" id="stuYrSem" readonly></td>
+					<th>담당교수</th>
+					<td><input type="text" id="stuPronm" readonly></td>
+				</tr>
+				<tr>
+					<th>입학정보(입학날짜)</th>
+					<td><input type="text" id="first" readonly></td>
+					<th>학적상태</th>
+					<td><input type="text" id="recCate" readonly></td>
+				</tr>
+				<tr>
+					<th>전화번호</th>
+					<td><input type="text" id="memTel" readonly></td>
+					<th>이메일</th>
+					<td><input type="text" id="memMl" readonly></td>
+				</tr>
+				<tr>
+					<th>우편번호</th>
+					<td><input type="text" id="memZip" readonly></td>
+					<th>주소</th>
+					<td><input type="text" id="memAddr" readonly></td>
+				</tr>
+				<tr>
+					<th>은행</th>
+					<td><input type="text" id="memBank" readonly></td>
+					<th>계좌번호(예금주)</th>
+					<td><input type="text" id="memDepoAct" readonly></td>
+				</tr>
+				<tr>
+					<th>전필학점</th>
+					<td><input type="text" id="stuMrc" readonly></td>
+					<th>전선학점</th>
+					<td><input type="text" id="stuMoc" readonly></td>
+				</tr>
+				<tr>
+					<th>교필학점</th>
+					<td><input type="text" id="stuCrc" readonly></td>
+					<th>교선학점</th>
+					<td><input type="text" id="stuCoc" readonly></td>
+				</tr>
+			</table>
+		</div>
+	</div>
+</div>

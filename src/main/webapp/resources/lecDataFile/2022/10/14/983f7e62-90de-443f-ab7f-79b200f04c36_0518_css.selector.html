@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>HTML/CSS Example</title>
+        <style>
+            tbody>tr:nth-child(odd) {
+                background-color: lightgray;
+            }            
+
+            #score > tbody > tr:nth-child(2n+1) > td{
+                background-color: darkgray;
+            }
+
+        </style>
+    </head>
+    <body>
+        
+        <h1>천하대학교 웹학과 성적</h1>
+        
+        <table border="1" id="score">
+            <thead>
+                <tr>
+                    <th>이름</th>
+                    <th>HTML</th>
+                    <th>CSS</th>
+                    <th>JavaScript</th>
+                    <th>jQuery</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>김철수</td>
+                    <td>A</td>
+                    <td>B</td>
+                    <td>B</td>
+                    <td>A</td>
+                </tr>
+                <tr>
+                    <td>박영희</td>
+                    <td>B</td>
+                    <td>B</td>
+                    <td>A</td>
+                    <td>B</td>
+                </tr>
+                <tr>
+                    <td>홍길동</td>
+                    <td>B</td>
+                    <td>C</td>
+                    <td>C</td>
+                    <td>C</td>
+                </tr>
+            </tbody>
+        </table>
+
+           <p>
+               <b>Lorem ipsum</b>
+                dolor sit amet consectetur adipisicing elit. Dignissimos, accusantium? Mollitia veniam fugit impedit autem quidem ducimus ratione delectus dolores aperiam hic incidunt reiciendis, numquam harum repudiandae consequatur laudantium sed.
+           </p> 
+    </body>
+</html>

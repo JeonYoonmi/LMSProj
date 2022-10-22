@@ -1,0 +1,187 @@
+package kr.ac.lms.service.impl;
+
+import java.util.List;
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.ac.lms.mapper.StudentLectureMapper;
+import kr.ac.lms.service.StudentLectureService;
+import kr.ac.lms.vo.AttenadenceVO;
+import kr.ac.lms.vo.LecApplyVO;
+import kr.ac.lms.vo.LecQnaVO;
+import kr.ac.lms.vo.LecQnarVO;
+import kr.ac.lms.vo.StuLecVO;
+import kr.ac.lms.vo.StuTestVO;
+import kr.ac.lms.vo.TaskSubmitVO;
+import kr.ac.lms.vo.TestVO;
+
+@Service
+public class StudentLectureServiceImpl implements StudentLectureService{
+
+	@Autowired
+	StudentLectureMapper studentLectureMapper;
+	
+	// 학생 대시보드
+	@Override
+	public List<LecApplyVO> getStuLecList (Map<String, Object> map){
+		return this.studentLectureMapper.getStuLecList(map);
+	}
+	
+	// 학생 제출 퀴즈 부모 insert
+	@Override
+	public int stuTestInsert (StuTestVO stuTestVO) {
+		return this.studentLectureMapper.stuTestInsert(stuTestVO);
+	}
+	
+	// 학생 제출 퀴즈 자식 insert
+	@Override
+	public int testDetailInsert(Map<String, Object> testDetailVOMap) {
+		return this.studentLectureMapper.testDetailInsert(testDetailVOMap);
+	}
+
+	// 학생 제출 퀴즈 확인
+	@Override
+	public List<TestVO> checkQuizSubmit(int stuCd) {
+		return this.studentLectureMapper.checkQuizSubmit(stuCd);
+	}
+
+	// 학생 제출 답안 오답확인
+	@Override
+	public TestVO stuTestDetail(Map<String, Object> map) {
+		return this.studentLectureMapper.stuTestDetail(map);
+	}
+
+	// 질문게시판 조회
+	@Override
+	public List<LecQnaVO> getLecQnaList(int lecCd) {
+		return this.studentLectureMapper.getLecQnaList(lecCd);
+	}
+
+	// 질문게시판 상세 조회
+	@Override
+	public LecQnaVO getLecQnaDetail(int lqnaCd) {
+		return this.studentLectureMapper.getLecQnaDetail(lqnaCd);
+	}
+
+	// 질문게시판 수정
+	@Override
+	public int lecQnaUpdate(LecQnaVO lecQnaVO) {
+		return this.studentLectureMapper.lecQnaUpdate(lecQnaVO);
+	}
+
+	// 질문게시판 삭제
+	@Override
+	public int lecQnaDelete(int lqnaCd) {
+	return this.studentLectureMapper.lecQnaDelete(lqnaCd);
+	}
+
+	// 질문게시판 등록
+	@Override
+	public int lecQnaInsert(LecQnaVO lecQnaVO) {
+		return this.studentLectureMapper.lecQnaInsert(lecQnaVO);
+	}
+
+	// 질문게시판 조회수 증가
+	@Override
+	public int lecQnaHit(int lqnaCd) {
+		return this.studentLectureMapper.lecQnaHit(lqnaCd);
+	}
+
+	// 질문게시판 답글 조회
+	@Override
+	public List<LecQnarVO> getLecQnar (int lqnaCd) {
+		return this.studentLectureMapper.getLecQnar(lqnaCd);
+	}
+
+	// 질문게시판 답글 등록
+	@Override
+	public int lecqnarInsert(LecQnarVO lecQnarVO) {
+		return this.studentLectureMapper.lecqnarInsert(lecQnarVO);
+	}
+
+	// 질문게시판 답글 수정
+	@Override
+	public int lecQnarUpdate(LecQnarVO lecQnarVO) {
+		return this.studentLectureMapper.lecQnarUpdate(lecQnarVO);
+	}
+
+	// 질문게시판 답글 삭제
+	@Override
+	public int lecQnarDelete(int lqnarCd) {
+		return this.studentLectureMapper.lecQnarDelete(lqnarCd);
+	}
+
+	// 질문게시판의 모든 답글 삭제
+	@Override
+	public int lecQnarAllDelete(int lqnaCd) {
+		return this.studentLectureMapper.lecQnarAllDelete(lqnaCd);
+	}
+
+	// 과제 및 평가 등록
+	@Override
+	public int stuLecTaskInsert(TaskSubmitVO taskSubmitVO) {
+		return this.studentLectureMapper.stuLecTaskInsert(taskSubmitVO);
+	}
+
+	// 과제 및 평가 제출 확인
+	@Override
+	public List<TaskSubmitVO> lecTaskSubmit(int stuCd) {
+		return this.studentLectureMapper.lecTaskSubmit(stuCd);
+	}
+
+	// 과제 및 평가 제출 상세
+	@Override
+	public TaskSubmitVO stuLecTaskDetail(Map<String, Object> map) {
+		return this.studentLectureMapper.stuLecTaskDetail(map);
+	}
+
+	// 과제 및 평가 제출 수정
+	@Override
+	public int stulecTaskUpdate(TaskSubmitVO taskSubmitVO) {
+		return this.studentLectureMapper.stulecTaskUpdate(taskSubmitVO);
+	}
+
+	// 과제 및 평가 삭제(학생)
+	@Override
+	public int stuLecTaskDelete(int tsubCd) {
+		return this.studentLectureMapper.stuLecTaskDelete(tsubCd);
+	}
+
+	// 출결 조회
+	@Override
+	public List<AttenadenceVO> getStuLecAttend(Map<String, Object> map) {
+		return this.studentLectureMapper.getStuLecAttend(map);
+	}
+
+	// 최종 성적
+	@Override
+	public StuLecVO getStuGrade(Map<String, Object> map) {
+		return this.studentLectureMapper.getStuGrade(map);
+	}
+
+	// 대시보드 년도 검색
+	@Override
+	public List<LecApplyVO> getLecaYr(int stuCd) {
+		return this.studentLectureMapper.getLecaYr(stuCd);
+	}
+
+	// 대시보드 학기 검색
+	@Override
+	public List<LecApplyVO> getLecaSem(Map<String, Object> map) {
+		return this.studentLectureMapper.getLecaSem(map);
+	}
+
+	// 포틀릿 당학기 강의 조회
+	@Override
+	public List<LecApplyVO> portGetCurrentLec(int stuCd) {
+		return this.studentLectureMapper.portGetCurrentLec(stuCd);
+	}
+
+	@Override
+	public List<LecApplyVO> portGetCurrentLecPro(int proCd) {
+		return this.studentLectureMapper.portGetCurrentLecPro(proCd);
+	}
+}

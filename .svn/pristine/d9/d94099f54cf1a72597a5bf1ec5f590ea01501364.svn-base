@@ -1,0 +1,101 @@
+@charset "UTF-8";
+#tgradeYellowBox  input{
+	width : 80px;
+	margin-left : 7px;
+	margin-right : 7px;
+	padding-left : 10px;
+}
+#tgradeGreenText {
+	color : green;
+}
+#gridNgrade {
+	height : 560px;
+}
+.divDiv {
+	width : 48.4%;
+	float : left;
+	margin-top : 10px;
+}
+#appealGrade {
+	border : 1px solid lightgray;
+	float : right;
+	padding : 10px;
+	height : 540px;
+}
+#personalGradeInfo{
+  	border: 1px solid lightgray;
+	margin: 10px;
+	padding: 10px;
+	background: #f4f7fd;
+	width: 100%;
+	min-width: 1200px;
+	max-width: 1400px;
+	margin: 0 auto;
+}
+#personalGradeInfo .round{
+	display : inline-block;
+}
+#personalGradeInfo input{
+	width : 180px;
+ 	height: 33px;
+ 	background: #F2F2F2;
+ 	border: 1px solid gray;
+ 	border-radius : 5px;
+		padding-left : 5px;
+}
+#personalGradeInfo label{
+	text-align : right;
+	width : 130px;
+}
+#personalGradeInfo div:nth-child(2){
+	margin-left : 254px;
+}
+#tgradePreAppealPage{
+	width : 100%;
+}
+#tgradePreAppealSelect{
+	display:inline-block;
+	margin-left : 2%;
+}
+#preAppealSubmitBtn{
+	float : right;
+	margin-top : -7px;
+	margin-left : 10px;
+	height : 40px;
+	margin-bottom : 14px;
+}
+.btn-primary{
+	background : #2a5388;
+	border : #2a5388;
+	box-shadow : #2a5388;
+}
+.btn-primary:hover{
+	background : #4671af;
+	border : #4671af;
+	box-shadow : #4671af;
+}
+#appealGrade th, #appealGrade td {
+	height : 32px;
+	padding-top : 5px;
+	padding-bottom : 5px;
+	background : #F3F8FF;
+	border : none;
+}
+#appealGrade th{
+	padding-right : 11px; 
+	text-align : right;
+}
+#appealGrade td {
+	padding-left : 10px;
+	padding-right : 10px;
+}
+.infoText1{
+   margin: 1px;
+   width: 100%;
+   height: 28px;
+   padding-left : 5px;
+   font-size : 0.9em;
+   background : white;
+   border : 1px solid lightgray;
+   border-radius : 0.15em;
+}

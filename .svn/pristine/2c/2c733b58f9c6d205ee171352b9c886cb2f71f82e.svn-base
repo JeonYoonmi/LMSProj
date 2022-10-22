@@ -1,0 +1,496 @@
+/**
+ * 개인정보 불러오기
+ */
+function getInfo() {
+	$.ajax({
+		url : "/pregister/getInfo",
+		type : "POST",
+		dataType : "JSON",
+		success : function(res) {
+			//console.log(res);
+			
+			$('#college').val(res.depNm);
+			$('#credit').val(res.stuMrc);
+			$('#myCredit').val(res.stuMoc);
+			$('#yrNsem').val(res.stuYr + "학년 (" + res.stuSem + "학기)");
+		}
+	});
+}
+/**
+ * 개설학과 리스트 불러오기
+ */
+function getDepartments() {
+	$.ajax({
+		url : "/course/department",
+		type : "GET",
+		dataType : "JSON",
+		success : function(res) {
+			str = '';
+			
+			$.each(res, function(i, v) {
+				str += '<option value="' + v + '">' + v + '</option>';
+			});
+			
+			$('#department').append(str);
+		}
+	});
+}
+/**
+ * 장바구니 추가하기
+ */
+function putWishList(lecaCd) {
+	$.ajax({
+		url : "/pregister/addWish",
+		type : "POST",
+		data : {lecaCd : lecaCd},
+		dataType : 'JSON',
+		success : function(res) {
+			
+			if(res == 1) {
+				alert("장바구니에 추가되었습니다.");
+			}else if(res == 2){
+				alert("이미 추가된 강의입니다.");
+			}else {
+				alert("다시 시도해주세요.");
+			}
+			
+			getWishListAgain();
+			getCnt();
+		}
+	});
+}
+/**
+ * 장바구니 삭제하기
+ */
+function removeWishList(lecaCd) {
+	$.ajax({
+		url : "/pregister/deleteWish",
+		type : "POST",
+		data : {lecaCd : lecaCd},
+		dataType : 'JSON',
+		success : function(res) {
+			
+			if(res == 1) {
+				alert("삭제되었습니다.");
+			}else {
+				alert("다시 시도해주세요.");
+			}
+			
+			getWishListAgain();
+			getCnt();
+		}
+	});
+}
+/**
+ * 장바구니 신청학점, 신청과목수 불러오기
+ */
+function getCnt() {
+	$.ajax({
+		url : "/pregister/getCnt",
+		type : "POST",
+		dataType : "JSON",
+		success : function(res) {
+			
+			pregisterCrd = res.CRD + ".0";
+			pregisterSub = res.SUB + "개";
+			
+			$('#pregisterCrd').text(pregisterCrd);
+			$('#pregisterSub').text(pregisterSub);
+		}
+	});
+}
+/**
+ * 강의계획서 PDF Viewer
+ */
+function getSyllabus(lecaCd, proCd) {
+	param = {"lecaCd" : lecaCd};
+	
+	$.ajax({
+		url : '/approval/lecApplyPdf',
+		type : 'post',
+		data : JSON.stringify(param),
+		dataType : 'JSON',
+		contentType : 'application/json;charset=utf-8',
+		success : function(result){
+			console.log(result);
+			window.open("/approval/lecApproPdfGetMgr/" + lecaCd, "a", "width=1200, height=850, left=100, top=50"); 
+		}
+	});
+}
+/**
+ * 개설강좌 리스트 불러오기
+ */
+function getList() {
+	$.ajax({
+		url : "/pregister/getList",
+		type : 'GET',
+		dataType : 'JSON',
+		success : function(res) {
+			
+			$.each(res, function(i,v){
+				res[i]['btn'] = '<button class="addBtn" onclick="putWishList('+ v.lecaCd +')">추가</button>';
+				res[i]['btnPdf'] = '<button class="btn btn-outline-secondary btn-sm" style="font-family:Nunito,sans-serif;" onclick="getSyllabus(' + v.lecaCd + ',' + v.lecCd +')">강의계획서</button>';
+			});
+			
+			grid = new tui.Grid({
+				el : document.getElementById('grid'),
+				data : res,
+				scrollX : true,
+				scrollY : true,
+				bodyHeight: 250,
+				rowHeaders : ["checkbox"],
+				columns : [
+					{header : '장바구니', name : 'btn', width : 100, align : 'center'},
+					{header : '개설학과', name : 'lecaCon', filter : 'select', width : 180, align : 'center'},
+					{header : '학년', name : 'lecaTrg', filter : 'select', width : 70, align : 'center'},
+					{header : '과목번호', name : 'subCd', filter : 'select', width : 110, align : 'center'},
+					{header : '과목명', name : 'lecaNm', filter : 'select', width : 200},
+					{header : '제한인원', name : 'lecaMax', width : 70, align : 'center'},
+					{header : '개설이수구분', name : 'lecaCate', width :100, align : 'center'},
+					{header : '학점', name : 'lecaCrd', width : 50, align : 'center'},
+					{header : '강의시간/강의실', name : 'lecaTt', width : 250},
+					{header : '담당교수', name : 'proNm', width : 100, align : 'center'},
+					{header : '성적평가방식', name : 'lecaGrade', width : 100, align : 'center'},
+					{header : '강의계획서', name : 'btnPdf', align : 'center'},
+					{header : 'lecaCd', name : 'lecaCd', hidden : true}
+				],
+				columnOptions: {
+			        resizable: true
+			    }
+			});
+			
+			closeLoadingWithMask();
+			
+			var dataSet = grid.getData();
+			$.each(dataSet, function(i1, v1) {
+				grid.disableRowCheck(v1.rowKey);
+			});
+		}
+	});
+}
+/**
+ * 장바구니 리스트 불러오기
+ */
+function getWishList() {
+	$.ajax({
+		url : "/pregister/wishList",
+		type : "POST",
+		dataType : "JSON",
+		success : function(res) {
+			
+			
+			$.each(res, function(i,v){
+				res[i]['btn'] = '<button class="delBtn" onclick="removeWishList(' + v.lecaCd + ')">삭제</button>';
+				res[i]['btnPdf'] = '<button class="btn btn-outline-secondary btn-sm" style="font-family:Nunito,sans-serif;" onclick="getSyllabus(' + v.lecaCd + ',' + v.lecCd +')">강의계획서</button>';
+			});
+			
+			grid1 = new tui.Grid({
+				el : document.getElementById('grid1'),
+				data : res,
+				scrollX : true,
+				scrollY : true,
+				bodyHeight: 250,
+				rowHeaders : ["checkbox"],
+				columns : [
+					{header : '장바구니', name : 'btn', width : 100, align : 'center'},
+					{header : '개설학과', name : 'lecaCon', filter : 'select', width : 180, align : 'center'},
+					{header : '학년', name : 'lecaTrg', filter : 'select', width : 70, align : 'center'},
+					{header : '과목번호', name : 'subCd', filter : 'select', width : 110, align : 'center'},
+					{header : '과목명', name : 'lecaNm', filter : 'select', width : 200},
+					{header : '제한인원', name : 'lecaMax', width : 70, align : 'center'},
+					{header : '개설이수구분', name : 'lecaCate', width :100, align : 'center'},
+					{header : '학점', name : 'lecaCrd', width : 50, align : 'center'},
+					{header : '강의시간/강의실', name : 'lecaTt', width : 250},
+					{header : '담당교수', name : 'proNm', width : 100, align : 'center'},
+					{header : '성적평가방식', name : 'lecaGrade', width : 100, align : 'center'},
+					{header : '강의계획서', name : 'btnPdf', align : 'center'},
+					{header : 'lecaCd', name : 'lecaCd', hidden : true}
+				],
+				columnOptions: {
+			        resizable: true
+			    }
+			});
+			
+			$("#grid1 .tui-grid-header-area input[type=checkbox]").attr('disabled' , true);
+			
+			grid1.on('check', function(ev) {
+				alert("체크했다!");
+				
+				var lecaCd = grid1.getValue(ev.rowKey, 'lecaCd');
+				
+				let dataObject = {
+					lecaCd : lecaCd	
+				};
+				
+				$.ajax({
+					url : "/pregister/getWishTime",
+					type : "POST",
+					data : JSON.stringify(dataObject),
+					contentType : "application/json;charset=utf-8",
+					dataType : "JSON",
+					success : function(res) {
+						
+						flag = true;
+						
+						//겹치는 시간인지 확인 후 alert
+						$.each(res, function(i, v) {
+							for(i = 0; i < timeArr.length; i++) {
+								if(v.TM_CD === timeArr[i]) {
+									alert("시간표가 중복됩니다.");
+									flag = false;
+									grid1.uncheck(ev.rowKey);
+									
+									return false;
+								}
+							}
+						});
+						
+						if(flag) {
+							//시간표에 표시
+							$.each(res, function(i, v) {
+								if(subject != v.LECA_CD) {
+									subject = v.LECA_CD;
+									colorNum++;
+									
+									if(colorNum > 10) {
+										colorNum = 1;
+									}
+								}
+								
+								timeArr.push(v.TM_CD);
+								$('#showTimeTable').find("tr").eq(v.GYOSI).find("td").eq(v.YOIL - 1).css("background-color", colorArr[colorNum - 1]);				
+								$('#showTimeTable').find("tr").eq(v.GYOSI).find("td").eq(v.YOIL - 1).text(v.SUB_CD);	
+							});
+						}
+						console.log(timeArr);
+					}
+				});
+			});
+			
+			grid1.on('uncheck', function(ev) {
+				alert("체크풀었다!");
+				
+				if(flag) {
+					var lecaCd = grid1.getValue(ev.rowKey, 'lecaCd');
+					
+					let dataObject = {
+						lecaCd : lecaCd	
+					};
+					
+					$.ajax({
+						url : "/pregister/getWishTime",
+						type : "POST",
+						data : JSON.stringify(dataObject),
+						contentType : "application/json;charset=utf-8",
+						dataType : "JSON",
+						success : function(res) {
+							//console.log(res);
+							$.each(res, function(i, v) {
+								$('#showTimeTable').find("tr").eq(v.GYOSI).find("td").eq(v.YOIL - 1).css("background-color", "");
+								$('#showTimeTable').find("tr").eq(v.GYOSI).find("td").eq(v.YOIL - 1).text("");
+								for(i = 0; i < timeArr.length; i++) {
+									if(timeArr[i] === v.TM_CD) {
+										timeArr.splice(i, 1);
+										i--;
+									} //if
+								} //for
+							}); //each
+							console.log(timeArr);
+						} //success
+					}); //ajax
+				} //if
+			}); //uncheck
+			
+			grid1.on('uncheckAll', function(ev) { //rowHeader의 checkbox를 uncheck할 경우
+				alert("uncheckAll 눌렀다!");
+			}); //uncheckAll		
+			
+		} //success
+	}); //ajax
+} //function
+/**
+ * 장바구니 추가 및 삭제 시 리스트 다시 불러오기
+ */
+function getWishListAgain() {
+	$.ajax({
+		url : "/pregister/wishList",
+		type : "POST",
+		dataType : "JSON",
+		success : function(res) {
+			$('#grid1').empty();
+			
+			$.each(res, function(i,v){
+				res[i]['btn'] = '<button class="delBtn" onclick="removeWishList(' + v.lecaCd + ')">삭제</button>';
+				res[i]['btnPdf'] = '<button class="btn btn-outline-secondary btn-sm" style="font-family:Nunito,sans-serif;" onclick="getSyllabus(' + v.lecaCd + ',' + v.lecCd +')">강의계획서</button>';
+			});
+			
+			grid1 = new tui.Grid({
+				el : document.getElementById('grid1'),
+				data : res,
+				scrollX : true,
+				scrollY : true,
+				bodyHeight: 250,
+				rowHeaders : ["checkbox"],
+				columns : [
+					{header : '장바구니', name : 'btn', width : 100, align : 'center'},
+					{header : '개설학과', name : 'lecaCon', filter : 'select', width : 180, align : 'center'},
+					{header : '학년', name : 'lecaTrg', filter : 'select', width : 70, align : 'center'},
+					{header : '과목번호', name : 'subCd', filter : 'select', width : 110, align : 'center'},
+					{header : '과목명', name : 'lecaNm', filter : 'select', width : 200},
+					{header : '제한인원', name : 'lecaMax', width : 70, align : 'center'},
+					{header : '개설이수구분', name : 'lecaCate', width :100, align : 'center'},
+					{header : '학점', name : 'lecaCrd', width : 50, align : 'center'},
+					{header : '강의시간/강의실', name : 'lecaTt', width : 250},
+					{header : '담당교수', name : 'proNm', width : 100, align : 'center'},
+					{header : '성적평가방식', name : 'lecaGrade', width : 100, align : 'center'},
+					{header : '강의계획서', name : 'btnPdf', align : 'center'},
+					{header : 'lecaCd', name : 'lecaCd', hidden : true}
+				],
+				columnOptions: {
+			        resizable: true
+			    }
+			});
+			
+			$("#grid1 .tui-grid-header-area input[type=checkbox]").attr('disabled' , true);
+			
+			grid1.on('check', (ev) => {
+				
+				var lecaCd = grid1.getValue(ev.rowKey, 'lecaCd');
+				
+				let dataObject = {
+					lecaCd : lecaCd	
+				};
+				
+				$.ajax({
+					url : "/pregister/getWishTime",
+					type : "POST",
+					data : JSON.stringify(dataObject),
+					contentType : "application/json;charset=utf-8",
+					dataType : "JSON",
+					success : function(res) {
+						
+						flag = true;
+						
+						//겹치는 시간인지 확인 후 alert
+						$.each(res, function(i, v) {
+							for(i = 0; i < timeArr.length; i++) {
+								if(v.TM_CD === timeArr[i]) {
+									alert("시간표가 중복됩니다.");
+									flag = false;
+									grid1.uncheck(ev.rowKey);
+									
+									return false;
+								}
+							}
+						});
+						
+						if(flag) {
+							//시간표에 표시
+							$.each(res, function(i, v) {
+								if(subject != v.LECA_CD) {
+									subject = v.LECA_CD;
+									colorNum++;
+									
+									if(colorNum > 10) {
+										colorNum = 1;
+									}
+								}
+								
+								timeArr.push(v.TM_CD);
+								$('#showTimeTable').find("tr").eq(v.GYOSI).find("td").eq(v.YOIL - 1).css("background-color", colorArr[colorNum - 1]);				
+								$('#showTimeTable').find("tr").eq(v.GYOSI).find("td").eq(v.YOIL - 1).text(v.SUB_CD);	
+							});
+						}
+						console.log(timeArr);
+					}
+				});
+			});
+			
+			grid1.on('uncheck', (ev) => {
+				
+				if(flag) {
+					var lecaCd = grid1.getValue(ev.rowKey, 'lecaCd');
+					
+					let dataObject = {
+						lecaCd : lecaCd	
+					};
+					
+					$.ajax({
+						url : "/pregister/getWishTime",
+						type : "POST",
+						data : JSON.stringify(dataObject),
+						contentType : "application/json;charset=utf-8",
+						dataType : "JSON",
+						success : function(res) {
+							//console.log(res);
+							$.each(res, function(i, v) {
+								$('#showTimeTable').find("tr").eq(v.GYOSI).find("td").eq(v.YOIL - 1).css("background-color", "");
+								$('#showTimeTable').find("tr").eq(v.GYOSI).find("td").eq(v.YOIL - 1).text("");
+								for(i = 0; i < timeArr.length; i++) {
+									if(timeArr[i] === v.TM_CD) {
+										timeArr.splice(i, 1);
+										i--;
+									}
+								}
+							});
+							console.log(timeArr);
+						} //success
+					}); //ajax
+				} //if
+			}); //uncheck
+			
+		} //success
+	}); //ajax
+} //function
+/**
+ * 검색 후 개설강좌 리스트 불러오기
+ */
+function getListAgain(dataObject) {
+	$.ajax({
+		url : "/course/getListAgain",
+		type : "POST",
+		data : JSON.stringify(dataObject),
+		contentType : "application/json;charset=utf-8",
+		dataType : 'JSON',
+		success : function(res) {
+			$('#grid').empty();
+			
+			$.each(res, function(i,v){
+				res[i]['btn'] = '<button class="addBtn" onclick="putWishList('+ v.lecaCd +')">추가</button>';
+				res[i]['btnPdf'] = '<button class="btn btn-outline-secondary btn-sm" style="font-family:Nunito,sans-serif;" onclick="getSyllabus(' + v.lecaCd + ',' + v.lecCd +')">강의계획서</button>';
+			});
+			
+			grid = new tui.Grid({
+				el : document.getElementById('grid'),
+				data : res,
+				scrollX : true,
+				scrollY : true,
+				bodyHeight: 250,
+				rowHeaders : ["checkbox"],
+				columns : [
+					{header : '장바구니', name : 'btn', width : 100, align : 'center'},
+					{header : '개설학과', name : 'lecaCon', filter : 'select', width : 180, align : 'center'},
+					{header : '학년', name : 'lecaTrg', filter : 'select', width : 70, align : 'center'},
+					{header : '과목번호', name : 'subCd', filter : 'select', width : 110, align : 'center'},
+					{header : '과목명', name : 'lecaNm', filter : 'select', width : 200},
+					{header : '제한인원', name : 'lecaMax', width : 70, align : 'center'},
+					{header : '개설이수구분', name : 'lecaCate', width :100, align : 'center'},
+					{header : '학점', name : 'lecaCrd', width : 50, align : 'center'},
+					{header : '강의시간/강의실', name : 'lecaTt', width : 250},
+					{header : '담당교수', name : 'proNm', width : 100, align : 'center'},
+					{header : '성적평가방식', name : 'lecaGrade', width : 100, align : 'center'},
+					{header : '강의계획서', name : 'btnPdf', align : 'center'},
+					{header : 'lecaCd', name : 'lecaCd', hidden : true}
+				],
+				columnOptions: {
+			        resizable: true
+			    }
+			});
+			
+			var dataSet = grid.getData();
+			$.each(dataSet, function(i1, v1) {
+				grid.disableRowCheck(v1.rowKey);
+			});
+		}
+	});
+}

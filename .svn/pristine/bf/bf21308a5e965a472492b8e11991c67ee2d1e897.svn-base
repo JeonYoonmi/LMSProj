@@ -1,0 +1,43 @@
+19일차
+
+transform : rotate(60deg->도 단위를 씀)
+
+transform : scale(1.4->숫자만. 배수 크기)
+
+transform : translate(Xpx, Ypx->만큼 이동)
+transform : translateY(10px->y축으로만 이동)
+transform : translateX(10px->x축으로만 이동)
+
+transform : skew(30deg->도 단위로 기울이기)
+
+⁂⁂⁑요소를 특정 영역의 중앙에 배치
+#box{
+position : absolute;
+top: 50%;
+transform: translate(-50%, -50%);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

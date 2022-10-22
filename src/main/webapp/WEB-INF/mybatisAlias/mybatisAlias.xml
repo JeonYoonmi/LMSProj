@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<!-- 
+	[마이바티스] 스프링에서 "_"를 사용한 컬럼명을 사용 시(BOOK 테이블의 BOOK_ID)
+	카멜케이스로 읽어줌(bookId)
+	ex) 테이블 컬러명이 member_id인 경우 jsp화면단에서 이 값을 사용 시 memberId로 사용
+	-->
+	<settings>
+		<setting name="mapUnderscoreToCamelCase" value="true"/>
+	</settings>
+	<!-- 자주 사용하는 타입의 별칭을 세팅 -->
+	<typeAliases>
+		<typeAlias type="kr.ac.lms.vo.UsertestVO" alias="usertestVO"/>
+		<typeAlias type="kr.ac.lms.vo.AllocationVO" alias="allocationVO"/>
+		<typeAlias type="kr.ac.lms.vo.ApprovalVO" alias="approvalVO"/>
+		<typeAlias type="kr.ac.lms.vo.AScheduleVO" alias="aScheduleVO"/>
+		<typeAlias type="kr.ac.lms.vo.AttachVO" alias="attachVO"/>
+		<typeAlias type="kr.ac.lms.vo.AttenadenceVO" alias="attenadenceVO"/>
+		<typeAlias type="kr.ac.lms.vo.BuildingVO" alias="buildingVO"/>
+		<typeAlias type="kr.ac.lms.vo.CollegeVO" alias="collegeVO"/>
+		<typeAlias type="kr.ac.lms.vo.CommonDetailVO" alias="commonDetailVO"/>
+		<typeAlias type="kr.ac.lms.vo.CommonVO" alias="commonVO"/>
+		<typeAlias type="kr.ac.lms.vo.CounselVO" alias="counselVO"/>
+		<typeAlias type="kr.ac.lms.vo.CriteriaVO" alias="criteriaVO"/>
+		<typeAlias type="kr.ac.lms.vo.DepartmentVO" alias="departmentVO"/>
+		<typeAlias type="kr.ac.lms.vo.EvaluationQVO" alias="evaluationQVO"/>
+		<typeAlias type="kr.ac.lms.vo.EvaluationVO" alias="evaluationVO"/>
+		<typeAlias type="kr.ac.lms.vo.FacilityVO" alias="facilityVO"/>
+		<typeAlias type="kr.ac.lms.vo.LecApplyVO" alias="lecApplyVO"/>
+		<typeAlias type="kr.ac.lms.vo.LecDataVO" alias="lecDataVO"/>
+		<typeAlias type="kr.ac.lms.vo.LecNoticeVO" alias="lecNoticeVO"/>
+		<typeAlias type="kr.ac.lms.vo.LecQnarVO" alias="lecQnarVO"/>
+		<typeAlias type="kr.ac.lms.vo.LecQnaVO" alias="lecQnaVO"/>
+		<typeAlias type="kr.ac.lms.vo.LectureVO" alias="lectureVO"/>
+		<typeAlias type="kr.ac.lms.vo.MailFileVO" alias="mailFileVO"/>
+		<typeAlias type="kr.ac.lms.vo.MailVO" alias="mailVO"/>
+		<typeAlias type="kr.ac.lms.vo.ManagerVO" alias="managerVO"/>
+		<typeAlias type="kr.ac.lms.vo.MemberVO" alias="memberVO"/>
+		<typeAlias type="kr.ac.lms.vo.NoticeFileVO" alias="noticeFileVO"/>
+		<typeAlias type="kr.ac.lms.vo.NoticeVO" alias="noticeVO"/>
+		<typeAlias type="kr.ac.lms.vo.NotificationVO" alias="notificationVO"/>
+		<typeAlias type="kr.ac.lms.vo.ObjectionVO" alias="objectionVO"/>
+		<typeAlias type="kr.ac.lms.vo.PaymentVO" alias="paymentVO"/>
+		<typeAlias type="kr.ac.lms.vo.PopupVO" alias="popupVO"/>
+		<typeAlias type="kr.ac.lms.vo.PortletVO" alias="portletVO"/>
+		<typeAlias type="kr.ac.lms.vo.ProfessorVO" alias="professorVO"/>
+		<typeAlias type="kr.ac.lms.vo.PScholarshipVO" alias="pScholarshipVO"/>
+		<typeAlias type="kr.ac.lms.vo.QnaReplyVO" alias="qnaReplyVO"/>
+		<typeAlias type="kr.ac.lms.vo.QnaVO" alias="qnaVO"/>
+		<typeAlias type="kr.ac.lms.vo.RecordVO" alias="recordVO"/>
+		<typeAlias type="kr.ac.lms.vo.ReservationVO" alias="reservationVO"/>
+		<typeAlias type="kr.ac.lms.vo.RoomVO" alias="roomVO"/>
+		<typeAlias type="kr.ac.lms.vo.ScheduleVO" alias="scheduleVO"/>
+		<typeAlias type="kr.ac.lms.vo.ScholarshipVO" alias="scholarshipVO"/>
+		<typeAlias type="kr.ac.lms.vo.StudentVO" alias="studentVO"/>
+		<typeAlias type="kr.ac.lms.vo.StuLecVO" alias="stuLecVO"/>
+		<typeAlias type="kr.ac.lms.vo.StuTestVO" alias="stuTestVO"/>
+		<typeAlias type="kr.ac.lms.vo.SubjectVO" alias="subjectVO"/>
+		<typeAlias type="kr.ac.lms.vo.TaskSubmitVO" alias="taskSubmitVO"/>
+		<typeAlias type="kr.ac.lms.vo.TaskVO" alias="taskVO"/>
+		<typeAlias type="kr.ac.lms.vo.TestDetailVO" alias="testDetailVO"/>
+		<typeAlias type="kr.ac.lms.vo.TestQVO" alias="testQVO"/>
+		<typeAlias type="kr.ac.lms.vo.TestVO" alias="testVO"/>
+		<typeAlias type="kr.ac.lms.vo.UsertestVO" alias="usertestVO"/>
+		<typeAlias type="kr.ac.lms.vo.WeekplanVO" alias="weekplanVO"/>
+		<typeAlias type="kr.ac.lms.vo.WishVO" alias="wishVO"/>
+		<typeAlias type="kr.ac.lms.vo.SclHistoryVO" alias="sclHistoryVO"/>
+		<typeAlias type="kr.ac.lms.vo.WeatherVO" alias="weatherVO"/>
+		<typeAlias type="kr.ac.lms.vo.ExamVO" alias="examVO"/>
+	</typeAliases>
+</configuration>
+
+
+
+
+
+
+

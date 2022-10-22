@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 
+	namespace : xml파일은 여러개일 수 있음.
+	이를 구별하기 위한 식별 용도로 사용
+-->
+<mapper namespace="kr.ac.lms.mapper.loginTestMapper">
+
+<resultMap type="memberVO" id="memMap">
+
+	<id property="memCd" column="mem_cd"/>
+	<result property="memNm" column="mem_nm"/>
+	<result property="memNme" column="mem_nme"/>
+	<result property="memTel" column="mem_tel"/>
+	<result property="memZip" column="mem_zip"/>
+	<result property="memAddr1" column="mem_addr1"/>
+	<result property="memAddr2" column="mem_addr2"/>
+	<result property="memReg1" column="mem_reg1"/>
+	<result property="memReg2" column="mem_reg2"/>
+	<result property="memMl" column="mem_ml"/>
+	<result property="memPass" column="mem_pass"/>
+	<result property="memBank" column="mem_bank"/>
+	<result property="memDepo" column="mem_depo"/>
+	<result property="memAct" column="mem_act"/>
+	<result property="memFnm" column="mem_fnm"/>
+	<result property="memFpt" column="mem_fpt"/>
+	
+	<association property="studentVO" resultMap="stuMap"></association>
+	<association property="professorVO" resultMap="proMap"></association>
+	<association property="managerVO" resultMap="mgrMap"></association>
+</resultMap>
+
+
+<resultMap type="studentVO" id="stuMap">
+	<id property="stuCd" column="stu_cd"/>
+	<result property="depCd" column="sdep_cd"/>
+	<result property="depNm" column="sdep_nm"/>
+	<result property="colNm" column="scol_nm"/>
+	<result property="stuYr" column="stu_yr"/>
+	<result property="stuSem" column="stu_sem"/>
+	<result property="stuMrc" column="stu_mrc"/>
+	<result property="stuMoc" column="stu_moc"/>
+	<result property="stuCrc" column="stu_crc"/>
+	<result property="stuCoc" column="stu_coc"/>
+	<result property="stuProNm" column="stu_pro"/>
+	<result property="recNm" column="srec_cate"/>
+	
+	<collection property="departmentVO" resultMap="depMap"/>
+</resultMap>
+	
+
+<resultMap type="professorVO" id="proMap">
+	<id property="proCd" column="pro_cd"/>
+	<result property="depCd" column="pdep_cd"/>
+	<result property="depNm" column="pdep_nm"/>
+	<result property="proJoin" column="pro_join"/>
+	<result property="proRet" column="pro_ret"/>
+	<result property="proPos" column="pro_pos"/>
+	<result property="proPosNm" column="pro_pos_nm"/>
+	
+	<collection property="departmentVO" resultMap="depMap"/>
+	<collection property="proPosList" resultMap="comMap"/>
+</resultMap>
+
+<resultMap type="managerVO" id="mgrMap">
+	<id property="mgrCd" column="mgr_cd"/>
+	<result property="mgrDiv" column="mgr_div"/>
+	<result property="mgrDivNm" column="mgr_div_nm"/>
+	<result property="mgrPos" column="mgr_pos"/>
+	<result property="mgrPosNm" column="mgr_pos_nm"/>
+	<result property="mgrJoin" column="mgr_join"/>
+	<collection property="mgrPosList" resultMap="comMap"/>
+</resultMap>
+
+<resultMap type="CommonVO" id="comMap">
+	<id property="comCd" column="com_cd"/>
+	<result property="comNm" column="com_nm"/>
+	<result property="comDetail" column="com_detail"/>
+	<result property="comMem" column="com_mem"/>
+	<result property="comUpd" column="com_upd"/>
+	<result property="comUpcd" column="com_upcd"/>
+	<collection property="comCd" resultMap="comdMap"/>
+</resultMap>
+
+<resultMap type="CommonDetailVO" id="comdMap">
+	<id property="comdCd" column="comd_cd"/>
+	<result property="comCd" column="com_cd"/>
+	<result property="comdNm" column="comd_nm"/>
+</resultMap>
+
+
+
+<resultMap type="departmentVO" id="depMap">
+	<result property="depCd" column="dep_cd"/>
+	<result property="colCd" column="col_cd"/>
+	<result property="depNm" column="dep_nm"/>
+</resultMap>
+
+
+
+<!-- 역할별 페이지 구분을 위한 쿼리 -->
+	<select id="login" parameterType="map" resultType="int">
+    select case
+        when max(stu_cd) is not null then '1'
+        when max(pro_cd) is not null then '2'
+        when max(mgr_cd) is not null then '3'
+        else '0'
+        end as result
+    from member
+    left join manager on(mem_cd=mgr_cd)
+    left join professor on(mem_cd=pro_cd)
+    left join student on(mem_cd=stu_cd)
+    where mem_cd=#{memCd}
+    and mem_pass =#{memPass}
+	</select>
+	
+	<select id="stuSession" parameterType="int" resultMap="memMap">
+		select m.mem_cd
+	   ,m.mem_nm ,m.mem_nme ,m.mem_tel
+	   ,m.mem_zip ,m.mem_addr1 ,m.mem_addr2
+	   ,m.mem_reg1 ,m.mem_reg2 ,m.mem_ml
+	   ,m.mem_pass ,m.mem_bank ,m.mem_depo
+	   ,m.mem_act ,m.mem_fnm ,m.mem_fpt
+	   ,s.stu_cd,s.dep_cd sdep_cd
+	   ,(select dep_nm from department d where d.dep_cd = s.dep_cd ) as sdep_nm
+       ,(select col_nm from college c inner join department d on c.col_cd=d.col_cd
+        inner join student s on s.dep_cd = d.dep_cd where stu_cd=#{memCd}) as scol_nm
+	   ,s.stu_yr ,s.stu_sem
+	   ,s.stu_mrc ,s.stu_moc ,s.stu_crc
+	   ,s.stu_coc 
+	   ,(select mem_nm from professor p join member m on p.pro_cd = m.mem_cd
+                    join student s on p.pro_cd = s.stu_pro where stu_cd=#{memCd}) stu_pro
+       ,(select comd_nm from common_detail where s.rec_cate = comd_cd) as srec_cate
+		from member m inner join student s
+		on m.mem_cd=s.stu_cd
+		where m.mem_cd =#{memCd}
+	</select>
+	
+	<select id="proSession" parameterType="int" resultMap="memMap">
+		select
+	    p.pro_cd ,p.dep_cd pdep_cd
+	   ,(select b.dep_nm from department b where b.dep_cd = p.dep_cd) pdep_nm  
+	   ,p.pro_join ,p.pro_ret
+	   ,p.pro_pos
+	   ,(select c.comd_nm
+        from professor p inner join common_detail c
+        on p.pro_pos = c.comd_cd
+        where p.pro_cd=#{memCd}) as pro_pos_nm
+	   ,m.mem_cd
+	   ,m.mem_nm  ,m.mem_nme
+	   ,m.mem_tel  ,m.mem_zip
+	   ,m.mem_addr1,m.mem_addr2
+	   ,m.mem_reg1  ,m.mem_reg2
+	   ,m.mem_ml  ,m.mem_pass
+	   ,m.mem_bank ,m.mem_depo
+	   ,m.mem_act ,m.mem_fnm
+	   ,m.mem_fpt
+		from member m inner join professor p
+		on (m.mem_cd=p.pro_cd)
+		where p.pro_cd=#{memCd}
+	</select>
+	
+	<select id="mgrSession" parameterType="int" resultMap="memMap">
+		select mg.mgr_cd 
+        ,mg.mgr_div
+        ,mg.mgr_pos
+        ,(select cd.comd_nm from common_detail cd where cd.comd_cd=mg.mgr_div) as mgr_div_nm
+        ,(select cd.comd_nm from common_detail cd where cd.comd_cd=mg.mgr_pos) as mgr_pos_nm
+	   ,mg.mgr_join ,mg.mgr_ret
+	   ,m.mem_cd  ,m.mem_nm
+	   ,m.mem_nme ,m.mem_tel
+	   ,m.mem_zip ,m.mem_addr1
+	   ,m.mem_addr2  ,m.mem_reg1
+	   ,m.mem_reg2  ,m.mem_ml
+	   ,m.mem_pass,m.mem_bank
+	   ,m.mem_depo ,m.mem_act
+	   ,m.mem_fnm  ,m.mem_fpt
+		from member m inner join manager mg
+		on (m.mem_cd=mg.mgr_cd)
+		where mg.mgr_cd=#{memCd}
+	</select>
+	
+	<select id="confirmId" parameterType="map" resultType="String">
+	select mem_cd from member
+	left join student on(mem_cd = stu_cd)
+	where dep_cd = (
+	select dep_cd from department
+	where dep_nm like #{depNm}
+	)
+	and mem_nm = #{memNm}
+	and mem_reg1 = #{memReg1}
+	</select>
+	
+	<update id="confirmPass" parameterType="map">
+		update member
+		set mem_pass = #{memPass}
+		where mem_tel = #{telNum}
+		and mem_cd = #{memCd}
+	</update>
+</mapper>

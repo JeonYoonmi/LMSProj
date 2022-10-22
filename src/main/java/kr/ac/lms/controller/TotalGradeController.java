@@ -1,0 +1,674 @@
+package kr.ac.lms.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.json.simple.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.ac.lms.service.TotalGradeService;
+import kr.ac.lms.vo.LecApplyVO;
+import kr.ac.lms.vo.MemberVO;
+import kr.ac.lms.vo.ObjectionVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/tgrade")
+@Controller
+public class TotalGradeController {
+	
+	@Autowired
+	TotalGradeService totalGradeService;
+	
+	@GetMapping("/list")
+	public String list(HttpServletRequest request, Model model) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> insertMap = new HashMap<String, Object>();
+		insertMap.put("memCd", memCd);
+		
+		Map<String, Object> map = this.totalGradeService.getTgrade(insertMap);
+		//log.info("tgrade map : " + map);
+		int totalCnt = this.totalGradeService.getTcnt(insertMap);
+		
+		model.addAttribute("tgrade", map);
+		model.addAttribute("totalCnt", totalCnt);
+		
+		return "tgrade/list";
+	}
+	
+	//개인정보 가져오기
+	@ResponseBody
+	@PostMapping("/getInfo")
+	public MemberVO getInfo(HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		MemberVO getMember = this.totalGradeService.getInfo(memCd);
+		
+		return getMember;
+	}
+	
+	//년도 및 학기 불러오기
+	@ResponseBody
+	@GetMapping("/getYrNSem")
+	public List<LecApplyVO> getYrNSem(HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> map = this.totalGradeService.getNow();
+		Map<String, Object> insertMap = new HashMap<String, Object>();
+		insertMap.put("memCd", memCd);
+		insertMap.put("year", map.get("YEAR"));
+		insertMap.put("semester", map.get("SEMESTER"));
+		
+		//log.info("map : " + map);
+		//log.info("insertMap : " + insertMap);
+		
+		List<LecApplyVO> list = this.totalGradeService.getYrNSem(insertMap);
+		
+		return list;
+	}
+	
+	//전체 성적 불러오기
+	@ResponseBody
+	@PostMapping("/getList")
+	public List<LecApplyVO> getList(HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> map = this.totalGradeService.getNow();
+		Map<String, Object> insertMap = new HashMap<String, Object>();
+		insertMap.put("memCd", memCd);
+		insertMap.put("year", map.get("YEAR"));
+		insertMap.put("semester", map.get("SEMESTER"));
+		
+		List<LecApplyVO> list = this.totalGradeService.getList(insertMap);
+		
+		return list;
+	}
+	
+	//onchange로 성적 불러오기
+	@ResponseBody
+	@PostMapping("/getListAgain")
+	public List<LecApplyVO> getListAgain(
+			HttpServletRequest request,
+			@RequestBody Map<String, Object> yrNsem) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> map = this.totalGradeService.getNow();
+		Map<String, Object> insertMap = new HashMap<String, Object>();
+		insertMap.put("memCd", memCd);
+		insertMap.put("year", map.get("YEAR"));
+		insertMap.put("semester", map.get("SEMESTER"));
+		insertMap.put("yrNsem", yrNsem.get("yrNsem"));
+		
+		List<LecApplyVO> list = this.totalGradeService.getList(insertMap);
+		
+		return list;
+	}
+	
+	//성적 건수 불러오기
+	@ResponseBody
+	@PostMapping("/getCnt")
+	public int getCnt(
+			HttpServletRequest request,
+			@RequestBody Map<String, Object> yrNsem) {
+		
+		//log.info(yrNsem.get("yrNsem") + "");
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> insertMap = new HashMap<String, Object>();
+		insertMap.put("memCd", memCd);
+		insertMap.put("yrNsem", yrNsem.get("yrNsem"));
+		
+		return this.totalGradeService.getCnt(insertMap);
+	}
+	
+	@GetMapping("/preList")
+	public String preList(HttpServletRequest request, Model model) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		String year = String.valueOf(this.totalGradeService.getNow().get("YEAR"));
+		String semester = String.valueOf(this.totalGradeService.getNow().get("SEMESTER"));
+		String yrNsem = year + semester;
+		//log.info(yrNsem);
+		
+		Map<String, Object> insertMap = new HashMap<String, Object>();
+		insertMap.put("memCd", memCd);
+		insertMap.put("yrNsem", yrNsem);
+		//insertMap.put("yrNsem", 20211);
+		
+		Map<String, Object> map = this.totalGradeService.getTgrade(insertMap);
+		int totalCnt = this.totalGradeService.getTcnt(insertMap);
+		
+		model.addAttribute("tgrade", map);
+		model.addAttribute("totalCnt", totalCnt);
+		
+		return "tgrade/preList";
+	}
+	
+	//현재 년도 및 학기 불러오기
+	@ResponseBody
+	@GetMapping("/getNow")
+	public Map<String, Object> getNow() {
+		return this.totalGradeService.getNow();
+	}
+	
+	//현재 학기 성적 불러오기
+	@ResponseBody
+	@PostMapping("/getPreList")
+	public List<LecApplyVO> getPreList(HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> map = this.totalGradeService.getNow();
+		Map<String, Object> insertMap = new HashMap<String, Object>();
+		insertMap.put("memCd", memCd);
+		insertMap.put("year", map.get("YEAR"));
+		insertMap.put("semester", map.get("SEMESTER"));
+//		insertMap.put("year", 2021);
+//		insertMap.put("semester", 1);
+		
+		List<LecApplyVO> list = this.totalGradeService.getPreList(insertMap);
+		
+		return list;
+	}
+	
+	//현재 학기 성적 건수 불러오기
+	@ResponseBody
+	@PostMapping("/getPreCnt")
+	public int getPreCnt(HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> map = this.totalGradeService.getNow();
+		Map<String, Object> insertMap = new HashMap<String, Object>();
+		
+		String year = String.valueOf(map.get("YEAR"));
+		String semester = String.valueOf(map.get("SEMESTER"));
+		String yrNsem = year + semester;
+		
+		insertMap.put("memCd", memCd);
+		insertMap.put("yrNsem", yrNsem);
+		
+		return this.totalGradeService.getCnt(insertMap);
+	}
+	
+	//성적 이의 신청
+	@GetMapping("/preAppeal")
+	public String preAppeal() {
+		return "tgrade/preAppeal";
+	}
+	
+	//getCourseInfo : 이의신청 하지 않은 경우 과목 정보 불러오기
+	@ResponseBody
+	@PostMapping("/getCourseInfo")
+	public LecApplyVO getCourseInfo(@RequestParam("lecaCd") int lecaCd) {
+		
+		LecApplyVO lecApplyVO = this.totalGradeService.getCourseInfo(lecaCd);
+		//log.info(lecApplyVO.toString());
+		
+		return lecApplyVO;
+	}
+	
+	@ResponseBody
+	@PostMapping("/checkObjection")
+	public int checkObjection(
+			HttpServletRequest request,
+			@RequestParam("lecaCd") int lecaCd) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("memCd", memCd);
+		map.put("lecaCd", lecaCd);
+		//log.info("checkObjection map : " + map.toString());
+		
+		ObjectionVO objectionVO= this.totalGradeService.checkObjection(map);
+		//log.info("checkObjection VO : " + objectionVO);
+		
+		int result = 0;
+		if(objectionVO == null) {
+			result = 1;
+		}else {
+			result = 2;
+		}
+		
+		return result;
+	}
+	
+	@PostMapping("/sendAppeal")
+	public String sendAppeal(
+			HttpServletRequest request,
+			@RequestParam("lecCd") int lecCd,
+			@RequestParam("objTtl") String objTtl,
+			@RequestParam("objCon") String objCon,
+			Model model) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		ObjectionVO objectionVO = new ObjectionVO();
+		objectionVO.setStuCd(memCd);
+		objectionVO.setLecCd(lecCd);
+		objectionVO.setObjTtl(objTtl);
+		objectionVO.setObjCon("제가 생각한 것보다 성적이 낮게 나와 연락드립니다. 감사합니다.");
+		
+		log.info(objectionVO.toString());
+		
+		int result = this.totalGradeService.insertObjection(objectionVO);
+		log.info("sendAppeal insert 결과 : " + result);
+		
+		model.addAttribute("result", result);
+		
+		return "tgrade/preAppeal";
+	}
+	
+	//백분율환산기준표
+	@GetMapping("/crdStandardPdf")
+	public String crdStandardPdf() {
+		return "frame/crdStandardPdf";
+	}
+	
+	//등록된 사진 가져오기
+	@GetMapping("/getPhoto")
+	public String getPhoto() {
+		
+		return "frame/getPhoto";
+	}
+	
+	/**
+	 * 교수 성적 이의 신청 화면 이동
+	 * @return
+	 */
+	@GetMapping("/objection")
+	public String approval() {
+		log.info("== objection ==");
+		
+		return "tgrade/objection";
+	}
+	
+	/**
+	 * 교수 성적 이의신청 리스트 출력
+	 * @param request
+	 * @return
+	 */
+	@ResponseBody
+	@PostMapping("/objectionList")
+	public List<ObjectionVO> objectionList(HttpServletRequest request){
+		log.info("== objectionList ==");
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int proCd = 0;
+		
+		if(memberVO == null) {
+			proCd = 201400036;
+		}else {
+			proCd = memberVO.getMemCd();
+		}
+		
+		List<ObjectionVO> objectionList = this.totalGradeService.objectionList(proCd);
+		log.info("objectionList >> " + objectionList);
+		
+		return objectionList;
+	}
+	
+	/**
+	 * 교수 성적 이의신청 상세정보 출력 
+	 * @param objCd
+	 * @return
+	 */
+	@ResponseBody
+	@PostMapping("/objDetail")
+	public ObjectionVO objDetail(int objCd) {
+		log.info("== objDetail ==");
+		
+		ObjectionVO objectionVO = this.totalGradeService.objDetail(objCd);
+		log.info("objectionVO >> " + objectionVO);
+		
+		return objectionVO;
+	}
+	
+	/**
+	 * 성적 이의신청 승인
+	 * @param objectionVO
+	 * @return
+	 */
+	@ResponseBody
+	@PostMapping("/updateY")
+	public int updateY(ObjectionVO objectionVO) {
+		log.info("== updateY ==");
+		log.info("objectionVO : " + objectionVO);
+		int result = this.totalGradeService.updateY(objectionVO);
+		
+		return result;
+	}
+	
+	/**
+	 * 성적 이의신청 반려
+	 * @param objectionVO
+	 * @return
+	 */
+	@ResponseBody
+	@PostMapping("/updateN")
+	public int updateN(ObjectionVO objectionVO) {
+		log.info("== updateN ==");
+		log.info("objectionVO : " + objectionVO);
+		
+		int result = this.totalGradeService.updateN(objectionVO);
+		
+		return result;
+	}
+	
+	//포틀릿용 - 성적조회
+	@GetMapping("/sample")
+	public String sample(HttpServletRequest request, Model model) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		List<LecApplyVO> yrList = this.totalGradeService.ptlYrNSem(memCd);
+		String yrNsem = yrList.get(0).getLecaYr() + "" + yrList.get(0).getLecaSem();
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("memCd", memCd);
+		map.put("yrNsem", yrNsem);
+		
+		List<LecApplyVO> gradeList = this.totalGradeService.ptlList(map);
+		Map<String, Object> totalMap = this.totalGradeService.ptlGet(map);
+		
+		//log.info(yrList.get(0).toString());
+		//log.info(gradeList.get(0).toString());
+		
+		model.addAttribute("yrNSem", yrList);
+		model.addAttribute("gradeList", gradeList);
+		model.addAttribute("totalMap", totalMap);
+		
+		return "tgrade/sample";
+	}
+	
+	//포틀릿용- 성적 재조회
+	@ResponseBody
+	@PostMapping("/getTgradeList")
+	public List<LecApplyVO> getTgradeList(
+			@RequestBody Map<String, Object> map,
+			HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		//log.info("돌아온 map : " + map.toString());
+		
+		Map<String, Object> insertMap = new HashMap<String, Object>();
+		insertMap.put("memCd", memCd);
+		insertMap.put("yrNsem", map.get("yrNsem"));
+		
+		List<LecApplyVO> gradeList = this.totalGradeService.ptlList(insertMap);
+		
+		return gradeList;
+	}
+	
+	//포틀릿용- 성적 재조회
+	@ResponseBody
+	@PostMapping("/getTgradeCnt")
+	public Map<String, Object> getTgradeCnt(
+			@RequestBody Map<String, Object> map,
+			HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> inputMap = new HashMap<String, Object>();
+		inputMap.put("memCd", memCd);
+		inputMap.put("yrNsem", map.get("yrNsem"));
+		
+		Map<String, Object> tgradeMap = this.totalGradeService.ptlGet(inputMap);
+		
+		return tgradeMap;
+	}
+	
+	@GetMapping("/sample2")
+	public String sample2() {
+		return "tgrade/sample2";
+	}
+	
+	@ResponseBody
+	@GetMapping("/doughnut")
+	public JSONObject doughnut(HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		return this.totalGradeService.doughnut(memCd);
+	}
+	
+	@ResponseBody
+	@PostMapping("/getDoughnut")
+	public Map<String, Object> getDoughnut(HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> map = this.totalGradeService.getDoughnut(memCd);
+		int depSum = this.totalGradeService.getDepSum(memCd);
+		
+		//log.info("map : " + map);
+		
+		if(map == null) {
+			map.put("JP", 0);
+			map.put("JS", 0);
+			map.put("GP", 0);
+			map.put("GS", 0);
+			map.put("JGSUM", 0);
+			map.put("DEPSUM", depSum);
+			map.put("RESSUM", depSum);
+		}else {
+			int resSum = 0;
+			if(Integer.parseInt(String.valueOf(map.get("JGSUM"))) < depSum) {
+				resSum = depSum - Integer.parseInt(String.valueOf(map.get("JGSUM")));
+			}
+			map.put("DEPSUM", depSum);
+			map.put("RESSUM", resSum);
+		}
+		
+		return map;
+	}
+	
+	@GetMapping("/sample3")
+	public String sample3() {
+		return "tgrade/sample3";
+	}
+	
+	@GetMapping("/sample4")
+	public String sample4(HttpServletRequest request, Model model) {
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		List<LecApplyVO> yrList = this.totalGradeService.ptlYrNSem(memCd);
+		if(yrList.size() != 0) {
+			model.addAttribute("yrNSem", yrList);
+			
+			String yrNsem = yrList.get(0).getLecaYr() + "" + yrList.get(0).getLecaSem();
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.put("memCd", memCd);
+			map.put("yrNsem", yrNsem);
+			
+			List<LecApplyVO> timeTableList = this.totalGradeService.ptlTimeTable(map);
+			model.addAttribute("timeTableList", timeTableList);
+		}
+		
+		return "tgrade/sample4";
+	}
+	
+	@ResponseBody
+	@PostMapping("/getTimeTable")
+	public List<LecApplyVO> getTimeTable(
+			@RequestBody Map<String, Object> map,
+			HttpServletRequest request,
+			Model model) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 20163530;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> insertMap = new HashMap<String, Object>();
+		insertMap.put("memCd", memCd);
+		insertMap.put("yrNsem", map.get("yrNsem"));
+		
+		List<LecApplyVO> timeTableList = this.totalGradeService.ptlTimeTable(insertMap);
+		
+		return timeTableList;
+	}
+}

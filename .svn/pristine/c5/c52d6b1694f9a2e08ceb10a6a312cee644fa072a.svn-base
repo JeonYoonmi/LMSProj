@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.lms.mapper.ScheduleMapper">
+
+   <!-- 개인일정 조회 -->
+   <select id="allSchedule" resultType="scheduleVO" parameterType="int">
+      SELECT * FROM SCHEDULE WHERE MEM_CD = #{memCd}
+   </select>
+   
+   <!-- 가장 큰 번호 조회 -->
+   <select id="findSeq" resultType="int">
+   SELECT MAX(SCH_CD)+1 FROM SCHEDULE
+   </select>
+   
+   <!-- 개인일정 등록 -->
+   <insert id="insert" parameterType="scheduleVO">
+   INSERT INTO schedule (
+    SCH_CD
+    , MEM_CD
+    , SCH_TTL
+    , SCH_ST
+    , SCH_EN
+    , SCH_COLOR
+    , SCH_CON
+    , SCH_YN
+   ) VALUES (
+       (SELECT MAX(SCH_CD)+1 FROM SCHEDULE)
+     , #{memCd}
+     , #{schTtl}
+     , TO_DATE(#{schSt},'YYYY-MM-DD HH24:MI')
+     , TO_DATE(#{schEn},'YYYY-MM-DD HH24:MI')
+     , #{schColor}
+     , #{schCon}
+     , 0
+   )
+   </insert>
+   
+   <!-- 개인일정 삭제 -->
+   <delete id="delete" parameterType="int">
+      DELETE FROM SCHEDULE WHERE SCH_CD = #{schCd}
+   </delete>
+   
+   <!-- 개인일정 불러오기 -->
+   <select id="findCon" parameterType="int" resultType="scheduleVO">
+      SELECT SCH_CON
+      ,TO_CHAR(SCH_ST,'YYYY-MM-DD HH24:MI') AS SCH_ST
+      ,TO_CHAR(SCH_EN,'YYYY-MM-DD HH24:MI') AS SCH_EN
+      FROM SCHEDULE WHERE SCH_CD = #{schCd}
+   </select>
+   
+   <!-- 개인일정 내용변경 -->
+   <update id="updateCon" parameterType="scheduleVO">
+      UPDATE SCHEDULE
+      SET SCH_TTL = #{schTtl}
+      , SCH_CON = #{schCon}
+      , SCH_ST = TO_DATE(#{schSt},'YYYY-MM-DD HH24:MI')
+      , SCH_EN = TO_DATE(#{schEn},'YYYY-MM-DD HH24:MI')
+      , SCH_COLOR = #{schColor}
+      WHERE SCH_CD = #{schCd}
+   </update>
+  
+     <!-- 포틀릿용 위클리 리스트 -->
+     <select id="weekCal" resultType="scheduleVO" parameterType="int">
+	   SELECT 
+	   CASE WHEN TO_CHAR(SCH_ST, 'MM-DD') = TO_CHAR(TO_DATE(SCH_EN, 'YY-MM-DD'),'MM-DD') 
+	      THEN TO_CHAR(SCH_ST, 'MM.DD') 
+	      ELSE TO_CHAR(SCH_ST, 'MM.DD') || '~' || TO_CHAR(TO_DATE(SCH_EN, 'YY-MM-DD'),'MM.DD') END AS SCH_ST
+	   , SCH_TTL
+	   FROM SCHEDULE 
+	   WHERE SCH_ST <![CDATA[>=]]> TO_CHAR(SYSDATE,'YYYYMMDD') 
+	   AND SCH_ST <![CDATA[<=]]> TO_CHAR(SYSDATE + 7,'YYYYMMDD')
+	   AND MEM_CD = #{memCd}
+	   ORDER BY SCH_ST ASC
+     </select>
+
+   <!-- 포틀릿용 미니 캘린더 리스트 -->
+   <select id="miniCal" resultType="scheduleVO" parameterType="int">
+   SELECT DISTINCT(TO_CHAR(T.SCH_ST + LEVEL - 1,'YYYY-MM-DD')) AS SCH_ST
+   FROM   (
+       SELECT * FROM SCHEDULE 
+       WHERE  MEM_CD = #{memCd}
+   ) T
+   CONNECT BY LEVEL <![CDATA[ <= ]]> (T.SCH_EN - T.SCH_ST + 1)
+   </select>
+   
+   <!-- 포틀릿용 투두리스트 리스트  -->
+   <select id="toDo" resultType="scheduleVO" parameterType="int"> 
+   SELECT M.*
+   FROM
+   (
+   SELECT DISTINCT(TO_CHAR(T.SCH_ST + LEVEL - 1,'HH24:MI')) AS SCH_ST, T.SCH_TTL, T.SCH_YN, T.SCH_CD
+   FROM   (
+       SELECT * FROM SCHEDULE 
+       WHERE  MEM_CD = #{memCd}
+   ) T
+   WHERE TO_CHAR(T.SCH_ST + LEVEL - 1,'YYYY-MM-DD') = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+   CONNECT BY LEVEL <![CDATA[ <= ]]> (T.SCH_EN - T.SCH_ST + 1)
+   ) M
+   ORDER BY M.SCH_YN ASC, M.SCH_ST ASC
+   </select>
+   
+   <!-- 투두리스트 체크 업데이트 -->
+   <update id="todoCheck" parameterType="int">
+   UPDATE SCHEDULE
+   SET SCH_YN = #{schYn}
+   WHERE SCH_CD = #{schCd}
+   </update>
+
+   
+</mapper>

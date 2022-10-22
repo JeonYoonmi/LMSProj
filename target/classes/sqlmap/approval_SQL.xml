@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.ac.lms.mapper.ApprovalMapper">
+
+	
+	<!-- resultmap설정해줘야함 -->
+	<resultMap type="lecApplyVO" id="lecApplyMap">
+		<result property="lecaCd" column="LECA_CD" />
+		<result property="subCd" column="SUB_CD" />
+		<result property="lecCd" column="LEC_CD" />
+		<result property="proCd" column="PRO_CD" />
+		<result property="lecaCate" column="LECA_CATE" />
+		<result property="lecaYr" column="LECA_YR" />
+		<result property="lecaSem" column="LECA_SEM" />
+		<result property="lecaNm" column="LECA_NM" />
+		<result property="lecaCon" column="LECA_CON" />
+		<result property="lecaTrg" column="LECA_TRG" />
+		<result property="lecaCrd" column="LECA_CRD" />
+		<result property="lecaPer" column="LECA_PER" />
+		<result property="lecaMax" column="LECA_MAX" />
+		<result property="lecaRoom" column="LECA_ROOM" />
+		<result property="lecaUnit" column="LECA_UNIT" />
+		<result property="lecaBook" column="LECA_BOOK" />
+		<result property="lecaNote" column="LECA_NOTE" />
+		<result property="lecaDt" column="LECA_DT" />
+		<result property="lecaGrade" column="LECA_GRADE" />
+		<result property="lecaImsi" column="LECA_IMSI" />
+		<result property="lecaYn" column="LECA_YN" />
+		<result property="lecaTt" column="LECA_TT" />
+		
+		<collection property="memberVO" resultMap="memberVOMap"></collection>
+		<collection property="collegeVO" resultMap="collegeVOMap"></collection>
+		<collection property="departmentVO" resultMap="departmentVOMap"></collection>
+		<collection property="commonDetailVO" resultMap="commonDetailVOlMap"></collection>
+		<collection property="criteriaVO" resultMap="criteriaVOlMap"></collection>
+	</resultMap>
+		<resultMap type="memberVO" id="memberVOMap">
+			<result property="memNm" column="MEM_NM"/>
+			<result property="memMl" column="MEM_ML"/>
+		</resultMap>
+		<resultMap type="collegeVO" id="collegeVOMap">
+			<result property="colNm" column="COL_NM"/>
+		</resultMap>
+		<resultMap type="departmentVO" id="departmentVOMap">
+			<result property="depNm" column="DEP_NM"/>
+			<result property="depTel" column="DEP_TEL"/>
+		</resultMap>
+		<resultMap type="commonDetailVO" id="commonDetailVOlMap">
+			<result property="comdCd" column="COMD_CD" />
+			<result property="comCd" column="COM_CD" />
+			<result property="comdNm" column="COMD_NM" />
+			<result property="comdCon" column="COMD_CON" />
+		</resultMap>
+		<resultMap type="criteriaVO" id="criteriaVOlMap">
+			<result property="crtrMp" column="CRTR_MP" />
+			<result property="crtrFp" column="CRTR_FP" />
+			<result property="crtrTp" column="CRTR_TP" />
+			<result property="crtrQp" column="CRTR_QP" />
+			<result property="crtrAp" column="CRTR_AP" />
+		</resultMap>
+	
+		<resultMap type="professorVO" id="professorMap">
+		<result property="proCd" column="PRO_CD" />
+		<result property="depCd" column="DEP_CD" />
+		<result property="proJoin" column="PRO_JOIN" />
+		<result property="proRet" column="PRO_RET" />
+		<result property="proPos" column="PRO_POS" />
+	</resultMap>
+	<resultMap type="commonDetailVO" id="commonDetailMap">
+		<result property="comdCd" column="COMD_CD" />
+		<result property="comCd" column="COM_CD" />
+		<result property="comdNm" column="COMD_NM" />
+		<result property="comdCon" column="COMD_CON" />
+	</resultMap>
+	<resultMap type="departmentVO" id="departmentMap">
+		<result property="depCd" column="DEP_CD" />
+		<result property="colCd" column="COL_CD" />
+		<result property="depNm" column="DEP_NM" />
+		<result property="depMrc" column="DEP_MRC" />
+		<result property="depMoc" column="DEP_MOC" />
+		<result property="depCrc" column="DEP_CRC" />
+		<result property="depCoc" column="DEP_COC" />
+		<result property="depMax" column="DEP_MAX" />
+		<result property="depTel" column="DEP_TEL" />
+	</resultMap>
+	<resultMap type="collegeVO" id="collegeMap">
+		<result property="colNm" column="COL_NM" />
+		<result property="colCrd" column="COL_CRD" />
+		<result property="colFee" column="COL_FEE" />
+	</resultMap>
+	<sql id="where">
+		<if test="year != null and !year.equals('')">
+			AND L.LECA_YR = #{year}
+		</if>
+		<if test="sem != null and !sem.equals('')">
+			AND     L.LECA_SEM = #{lecaSem}
+		</if>
+<!-- 		<if test="cate != null and !cate.equals('')"> -->
+<!-- 			AND     L.LECA_CATE = #{lecaCate} -->
+<!-- 		</if> -->
+<!-- 		<if test="grade != null and !grade.equals('')"> -->
+<!-- 			AND     L.LECA_GRADE = #{lecaGrade} -->
+<!-- 		</if> -->
+	</sql>
+	<select id="proApprovalList" parameterType="int" resultType="lecApplyVO">
+		SELECT  ROWNUM AS RNUM, L.LECA_CD, L.LECA_YR, L.LECA_SEM,  L.LECA_YR || '년도' AS LECA_BOOK, L.LECA_SEM || '학기' AS LECA_NOTE,
+		        L.LECA_NM, L.LECA_TRG, L.LECA_CRD, L.LECA_PER, L.LECA_MAX, L.LECA_TM1, 
+		        L.LECA_TM2, L.LECA_UNIT, L.LECA_DT, L.LECA_ADT,
+		        L.LECA_IMSI, L.LECA_TT,
+		        (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = P.PRO_CD) AS PRO_NM,
+		        (SELECT D.DEP_NM FROM DEPARTMENT D WHERE P.DEP_CD = D.DEP_CD) AS PRO_DEP,
+		        (CASE WHEN LECA_YN = 0 THEN '승인대기'
+		              WHEN LECA_YN = 1 THEN '승인'
+                      WHEN LECA_YN = 2 THEN '반려'
+		        END) AS LECA_CON,
+		        (SELECT COMD_NM  FROM COMMON_DETAIL WHERE COMD_CD = L.LECA_CATE) AS LECA_CATE,
+		        (SELECT SUB_NM FROM SUBJECT WHERE SUB_CD = L.SUB_CD) AS SUB_NM,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = L.LECA_GRADE) AS LECA_GRADE,
+       		   (CASE WHEN L.LECA_GUBUN = 'AP101' THEN '강의계획서' END) AS LECA_ROOM
+		FROM    LEC_APPLY L, PROFESSOR P
+		WHERE   P.PRO_CD = L.PRO_CD
+		AND     P.PRO_CD = #{memCd}
+	</select>
+	
+	<select id="proApprovalSearchList" parameterType="hashMap" resultType="lecApplyVO">
+		SELECT  ROWNUM AS RNUM, L.LECA_CD, L.LECA_YR, L.LECA_SEM,  L.LECA_YR || '년도' AS LECA_BOOK, L.LECA_SEM || '학기' AS LECA_NOTE,
+		        L.LECA_NM, L.LECA_TRG, L.LECA_CRD, L.LECA_PER, L.LECA_MAX, L.LECA_TM1, 
+		        L.LECA_TM2, L.LECA_UNIT, L.LECA_DT,
+		        L.LECA_IMSI, L.LECA_TT,
+		        (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = P.PRO_CD) AS PRO_NM,
+		        (SELECT D.DEP_NM FROM DEPARTMENT D WHERE P.DEP_CD = D.DEP_CD) AS PRO_DEP,
+		        (CASE WHEN LECA_YN = 0 THEN '승인대기'
+		              WHEN LECA_YN = 1 THEN '승인'
+                      WHEN LECA_YN = 2 THEN '반려'
+		        END) AS LECA_CON,
+		        (SELECT COMD_NM  FROM COMMON_DETAIL WHERE COMD_CD = L.LECA_CATE) AS LECA_CATE,
+		        (SELECT SUB_NM FROM SUBJECT WHERE SUB_CD = L.SUB_CD) AS SUB_NM,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = L.LECA_GRADE) AS LECA_GRADE,
+		        A.APPR_DT,
+       		   (CASE WHEN A.APPR_CATE = 2 THEN '강의계획서' END) AS LECA_ROOM
+		FROM    LEC_APPLY L, PROFESSOR P, APPROVAL A
+		WHERE   P.PRO_CD = L.PRO_CD
+		AND     A.APPR_MEM = L.LECA_CD
+		AND     P.PRO_CD = #{memCd}
+		<include refid="where"></include>
+		ORDER BY LECA_DT DESC
+	</select>
+	
+	<select id="proApprovalPdf" parameterType="hashMap" resultType="lecApplyVO">
+		SELECT  ROWNUM AS RNUM, L.LECA_CD, L.LECA_YR, L.LECA_SEM,  L.LECA_YR || '년도' AS LECA_BOOK, L.LECA_SEM || '학기' AS LECA_NOTE,
+		        L.LECA_NM, L.LECA_TRG, L.LECA_CRD, L.LECA_PER, L.LECA_MAX, L.LECA_TM1, 
+		        L.LECA_TM2, L.LECA_UNIT, L.LECA_DT, L.LECA_ADT,
+		        L.LECA_IMSI, L.LECA_TT,
+		        (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = P.PRO_CD) AS PRO_NM,
+		        (SELECT D.DEP_NM FROM DEPARTMENT D WHERE P.DEP_CD = D.DEP_CD) AS PRO_DEP,
+		        (CASE WHEN LECA_YN = 0 THEN '승인대기'
+		              WHEN LECA_YN = 1 THEN '승인'
+                      WHEN LECA_YN = 2 THEN '반려'
+		        END) AS LECA_CON,
+		        (SELECT COMD_NM  FROM COMMON_DETAIL WHERE COMD_CD = L.LECA_CATE) AS LECA_CATE,
+		        (SELECT SUB_NM FROM SUBJECT WHERE SUB_CD = L.SUB_CD) AS SUB_NM,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = L.LECA_GRADE) AS LECA_GRADE,
+       		   (CASE WHEN L.LECA_GUBUN = 'AP101' THEN '강의계획서' END) AS LECA_ROOM
+		FROM    LEC_APPLY L, PROFESSOR P
+		WHERE   P.PRO_CD = L.PRO_CD
+		AND     L.LECA_CD = #{lecaCd}
+		ORDER BY LECA_DT DESC
+	</select>
+	
+	<select id="returnHistory" parameterType="int" resultType="lecApplyVO">
+		SELECT L.SUB_CD, L.PRO_CD, (SELECT COMD_NM FROM COMMON_DETAIL WHERE L.LECA_CATE = COMD_CD)AS LECA_CATE, L.LECA_YR || '년도' AS LECA_BOOK, L.LECA_SEM || '학기' AS LECA_NOTE, L.LECA_NM,
+		        L.LECA_DT, (CASE WHEN LECA_YN = 2 THEN '반려' END) AS LECA_CON, L.LECA_ADT, L.LECA_GUBUN, L.LECA_RSN AS apprRsn
+		FROM    LEC_APPLY L
+		WHERE   PRO_CD = #{memCd}
+        AND     LECA_YN = 2
+	</select>
+	
+	<select id="getLecApply" parameterType="hashMap" resultMap="lecApplyMap">
+		SELECT  U.LECA_CD, U.LECA_CATE, U.LECA_YR, U.LECA_SEM, U.LECA_NM,
+		        NVL(U.LECA_CON, '등록된 설명이 없습니다.') LECA_CON,
+		        U.LECA_TRG, U.LECA_CRD, U.LECA_PER, U.LECA_MAX,
+		        NVL(U.LECA_ROOM, '지정된 건물이 없습니다.') LECA_ROOM,
+		        U.LECA_UNIT,
+		        NVL(U.LECA_BOOK, '등록된 교재가 없습니다.') LECA_BOOK,
+		        U.LECA_NOTE, U.LECA_DT,
+		        U.LECA_IMSI, U.LECA_YN, U.LEC_CD,  U.SUB_CD,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = U.LECA_GRADE) COMD_NM,
+		        U.PRO_CD, U.MEM_NM, U.MEM_ML,
+		        U.COL_NM, U.DEP_NM, U.DEP_TEL,
+		        U.CRTR_MP, U.CRTR_FP, U.CRTR_TP, U.CRTR_QP, U.CRTR_AP,
+		        NVL(TRIM(U.MON 
+		           || ' ' || U.TUE 
+		           || ' ' || U.WED 
+		           || ' ' || U.THU
+		           || ' ' || U.FRI), ' - ') LECA_TT
+		FROM (
+			    SELECT  LECA_CD, SUB_CD, LEC_CD, PRO_CD, LECA_CATE,
+			            LECA_YR, LECA_SEM, LECA_NM, LECA_CON, LECA_TRG,
+			            LECA_CRD, LECA_PER, LECA_MAX, LECA_ROOM, LECA_UNIT,
+			            LECA_NOTE, LECA_BOOK, LECA_DT, LECA_IMSI, LECA_YN,
+			            MEM_NM, COL_NM, DEP_NM, MEM_ML, DEP_TEL,
+			            LECA_GRADE, CRTR_MP, CRTR_FP, CRTR_TP, CRTR_QP, CRTR_AP,
+			            MAX(MON) MON, MAX(TUE) TUE, MAX(WED) WED, MAX(THU) THU, MAX(FRI) FRI
+			    FROM VW_SUOMI
+			    GROUP BY LECA_CD, SUB_CD, LEC_CD, PRO_CD, LECA_CATE,
+			            LECA_YR, LECA_SEM, LECA_NM, LECA_CON, LECA_TRG,
+			            LECA_CRD, LECA_PER, LECA_MAX, LECA_ROOM, LECA_UNIT,
+			            LECA_NOTE, LECA_BOOK, LECA_DT, LECA_IMSI, LECA_YN,
+			            MEM_NM, COL_NM, DEP_NM, MEM_ML, DEP_TEL,
+			            LECA_GRADE, CRTR_MP, CRTR_FP, CRTR_TP, CRTR_QP, CRTR_AP
+		) U
+		WHERE U.LECA_CD = #{lecaCd}
+	</select>
+	
+	<!-- 강의 > 수업계획서 > 주차별 강의 내용 조회 -->
+<!-- 			AND U.lecaNote LIKE '%' || #{lecaNote} || '%' -->
+<!-- 			AND U.lecaNm LIKE '%' || #{lecaNm} || '%' -->
+	<select id="getWeekPlan" parameterType="int" resultType="weekplanVO">
+		SELECT  W.WP_NO
+		    ,   W.WP_CON
+		FROM WEEKPLAN W, LEC_APPLY LA
+		WHERE W.LECA_CD = LA.LECA_CD
+		AND   W.LECA_CD = #{lecaCd}
+		ORDER BY W.WP_NO
+	</select>
+	
+	<!-- 학사관리자 전체 결재 목록 조회 -->
+	<sql id="uwhere">
+		<if test="LECA_NOTE != null and !LECA_NOTE.equals('')">
+			AND U.LECA_NOTE LIKE '%' || #{LECA_NOTE} || '%' 
+		</if>
+		<if test="LECA_NM != null and !LECA_NM.equals('')">
+			AND U.LECA_NM LIKE '%' || #{LECA_NM} || '%'
+		</if>
+		<if test="(lecaDt != null and !lecaDt.equals('')) and (value != null and !value.equals(''))">
+			AND ${value} BETWEEN to_date(#{lecaDt}, 'YYYY-MM-DD') AND to_date(#{lecaAdt}, 'YYYY-MM-DD')
+		</if>
+	</sql>
+	
+	<select id="managerApprovalList" parameterType="hashMap" resultType="lecApplyVO">
+	WITH U AS(
+		SELECT L.LECA_DT AS LECA_DT, L.LECA_ADT AS LECA_ADT ,
+              (CASE WHEN L.LECA_YN = 0 THEN '승인대기'
+                          WHEN L.LECA_YN = 1 THEN '승인'
+                            WHEN L.LECA_YN = 2 THEN '반려'
+                    END) AS LECA_CON, L.LECA_RSN AS LECA_RSN, (SELECT COMD_NM  FROM COMMON_DETAIL WHERE COMD_CD = L.LECA_GUBUN) AS LECA_BOOK,
+              (SELECT MEM_NM FROM MEMBER WHERE L.PRO_CD = MEM_CD) AS LECA_NOTE,
+              (SELECT D.DEP_NM FROM DEPARTMENT D, PROFESSOR P WHERE P.DEP_CD = D.DEP_CD AND L.PRO_CD = P.PRO_CD) AS LECA_TT,
+              NVL((SELECT MEM_NM FROM MEMBER WHERE L.MGR_CD = MEM_CD), '-') AS LECA_NM,
+              NVL((SELECT C.COMD_NM FROM COMMON_DETAIL C, MANAGER M WHERE C.COMD_CD = M.MGR_DIV AND M.MGR_CD = L.MGR_CD), '-') AS LECA_ROOM
+  	    FROM LEC_APPLY L
+    	WHERE 1 = 1
+    	AND	 L.LECA_IMSI IS NULL
+    )
+    SELECT U.*
+    FROM U
+    WHERE 1=1
+		<include refid="uwhere"></include>
+	</select>
+	
+	<select id="managerApprovalListS" parameterType="hashMap" resultType="lecApplyVO">
+	WITH U AS(
+		SELECT S.SCLH_DT AS LECA_DT, S.SCLH_ADT AS LECA_ADT ,
+			(CASE WHEN S.SCLH_YN = 0 THEN '승인대기'
+                          WHEN S.SCLH_YN = 1 THEN '승인'
+                            WHEN S.SCLH_YN = 2 THEN '반려'
+                    END) AS LECA_CON, S.SCLH_RSN AS LECA_RSN , (SELECT COMD_NM  FROM COMMON_DETAIL WHERE COMD_CD = S.SCLH_GUBUN) AS LECA_BOOK,
+                (SELECT MEM_NM FROM MEMBER WHERE S.MEM_CD = MEM_CD) AS LECA_NOTE,
+                (SELECT D.DEP_NM FROM DEPARTMENT D, PROFESSOR P WHERE P.DEP_CD = D.DEP_CD AND S.MEM_CD = P.PRO_CD) AS LECA_TT,
+                NVL((SELECT MEM_NM FROM MEMBER WHERE S.MGR_CD = MEM_CD), '-') AS LECA_NM,
+                NVL((SELECT C.COMD_NM FROM COMMON_DETAIL C, MANAGER M WHERE C.COMD_CD = M.MGR_DIV AND M.MGR_CD = S.MGR_CD), '-') AS LECA_ROOM
+	      FROM SCL_HISTORY S
+	      WHERE S.SCL_CD = 3
+	      )
+    SELECT U.*
+    FROM U
+    WHERE 1=1
+	  <include refid="uwhere"></include>	
+	</select>
+	
+	<!-- 날짜 계산 SQL -->
+	<select id="dateCal" resultType="hashMap" parameterType="String">
+		SELECT TO_CHAR(SYSDATE-1,'yyyy-mm-dd') AS day
+		, TO_CHAR(SYSDATE-7,'yyyy-mm-dd') AS week
+		, TO_CHAR(ADD_MONTHS(SYSDATE,-1),'yyyy-mm-dd') AS month
+		, TO_CHAR(ADD_MONTHS(SYSDATE,-12),'yyyy-mm-dd') AS year
+		FROM DUAL
+	</select>
+	
+	<!-- 학사관리자 전체 결재 목록 조회 -->
+	<sql id="lecWhere">
+		<if test="LECA_NOTE != null and !LECA_NOTE.equals('')">
+			AND U.lecaNote LIKE '%' || #{LECA_NOTE} || '%' 
+		</if>
+		<if test="LECA_NM != null and !LECA_NM.equals('')">
+			AND U.lecaNm LIKE '%' || #{LECA_NM} || '%'
+		</if>
+		<if test="value != null and !value.equals('') and lecaDt != null and !lecaDt.equals('')">
+			AND ${value} BETWEEN to_date(#{lecaDt} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND to_date(#{lecaAdt} || ' 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+		</if>
+	</sql>
+	
+	<!-- 학사관리자 강의계획서 결재 리스트 -->
+	<select id="mgrLecApprovalList" resultType="lecApplyVO" parameterType="hashMap">
+		WITH U AS(
+				SELECT L.LECA_SEM, L.LECA_YR, L.LECA_DT, L.LECA_ADT, LECA_CD, PRO_CD,
+				        (CASE WHEN L.LECA_YN = 0 THEN '승인대기'
+						              WHEN L.LECA_YN = 1 THEN '승인'
+				                      WHEN L.LECA_YN = 2 THEN '반려'
+						        END) AS lecaCon, L.LECA_RSN AS lecaRsn, (SELECT COMD_NM  FROM COMMON_DETAIL WHERE COMD_CD = L.LECA_GUBUN) AS lecaBook,
+				        (SELECT MEM_NM FROM MEMBER WHERE L.PRO_CD = MEM_CD) AS lecaNote,
+				        (SELECT D.DEP_NM FROM DEPARTMENT D, PROFESSOR P WHERE P.DEP_CD = D.DEP_CD AND L.PRO_CD = P.PRO_CD) AS lecaTt,
+				        NVL((SELECT MEM_NM FROM MEMBER WHERE L.MGR_CD = MEM_CD), '-') AS lecaNm,
+				         NVL((SELECT C.COMD_NM FROM COMMON_DETAIL C, MANAGER M WHERE C.COMD_CD = M.MGR_DIV AND M.MGR_CD = L.MGR_CD), '-') AS lecaRoom
+				FROM LEC_APPLY L
+				WHERE L.LECA_IMSI IS NULL
+		)
+		SELECT U.*
+		FROM U
+		WHERE 1 = 1
+		<include refid="lecWhere"></include>
+		ORDER BY U.LECA_DT DESC
+	</select>
+	
+	<!-- 학사관리자 강의계획서 결재 중 반려사유 update -->
+	<update id="lecApplyNoUpdate" parameterType="hashMap">
+		UPDATE LEC_APPLY 
+		SET LECA_YN = 2,
+		    MGR_CD = #{mgrCd},
+		    LECA_ADT = SYSDATE,
+		    LECA_RSN = #{lecaRsn}
+		WHERE LECA_CD = #{lecaCd}
+	</update>
+	
+	<!-- 강의실 배정 중 단과대 건물명 리스트 출력 -->
+	<select id="buildingList" resultType="buildingVO">
+		SELECT BLD_CD, COL_CD, BLD_NM, BLD_SNM 
+		FROM BUILDING
+	</select>
+	
+	<!-- 강의실 배정 중 단과대 별 호실 리스트 출력-->
+	<select id="roomList" parameterType="String" resultType="roomVO">
+		SELECT R.ROOM_CD, R.BLD_CD, R.ROOM_NO, R.ROOM_MAX 
+		FROM ROOM R
+		WHERE R.BLD_CD = (SELECT B.BLD_CD FROM BUILDING B WHERE B.BLD_NM = #{bldNm})
+	</select>
+	
+	<!-- 강의실 배정 중 LEC_CD를 통한 교수 및 강의 정보 출력 -->
+	<select id="lecInfoSelect" parameterType="int" resultType="lecApplyVO">
+		SELECT  (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = 201412345) AS lecaCate
+		       ,(SELECT D.DEP_NM FROM DEPARTMENT D, PROFESSOR P WHERE PRO_CD = 201412345 AND P.DEP_CD = D.DEP_CD) AS lecaCon
+		       ,LECA_NM
+		       ,SUB_CD
+		FROM LEC_APPLY 
+		WHERE LECA_CD = #{lecaCd}
+	</select>
+	
+	<!-- 강의실 배정 중 해당 호실에 따른 수용인원 출력 -->
+	<select id="peopleCntSelect" parameterType="hashMap" resultType="roomVO">
+		SELECT ROOM_MAX 
+		FROM ROOM 
+		WHERE BLD_CD = #{bldCd}
+		AND ROOM_NO = #{roomNo}
+	</select>
+	
+	<!-- 강의실 배정 중 강의실에 따른 시간표 출력하기 -->
+	<select id="roomTimeTable" parameterType="hashMap" resultType="hashMap">
+		SELECT  LA.SUB_CD,
+		        LA.LECA_NM,
+		        TC.TM_GYOSI,
+		        TC.TM_YOIL,
+		        TC.TM_START,
+		        TC.TM_END,
+		        TT.TM_CD,
+		        LA.LECA_CD,
+		        (SELECT M.MEM_NM FROM MEMBER M WHERE M.MEM_CD = LA.PRO_CD) AS PRO_NM
+		FROM    LEC_APPLY LA, TIMETABLE TT, TIMECODE TC
+		WHERE   LECA_YR = (SELECT EXTRACT(YEAR FROM SYSDATE) FROM DUAL)
+		AND     LECA_SEM = (CASE WHEN EXTRACT(MONTH FROM SYSDATE) IN ('8','9','10','11','12','1') THEN '2' WHEN EXTRACT(MONTH FROM SYSDATE) IN ('2','3','4','5','6','7') THEN '1' END)
+		AND     TT.LECA_CD = LA.LECA_CD
+		AND     TT.TM_CD = TC.TM_CD
+		AND     LA.LECA_ROOM = #{lecaRoom}
+		AND     LA.LECA_UNIT = #{lecaUnit}
+	</select>
+	
+	<!-- 강의계획 신청 코드를 통한 신청정보 출력 -->
+	<select id="applyInfo" parameterType="int" resultType="hashMap">
+		SELECT  (SELECT M.MEM_NM FROM MEMBER M WHERE M.MEM_CD = L.PRO_CD) AS PRO_NM,
+		        (SELECT C.COL_NM FROM COLLEGE C, PROFESSOR P, DEPARTMENT D WHERE L.PRO_CD = P.PRO_CD AND D.DEP_CD = P.DEP_CD AND D.COL_CD = C.COL_CD) AS PRO_COL,
+		        (SELECT C.COMD_NM FROM COMMON_DETAIL C WHERE C.COMD_CD = L.LECA_CATE) AS LECA_CATE,
+		        L.PRO_CD,
+		        L.LECA_NM, 
+		        L.LECA_MAX, 
+		        L.LECA_TRG, 
+		        L.LECA_PER, 
+		        L.LECA_CRD, 
+		        L.LECA_TT, 
+		        L.LECA_NOTE
+		FROM LEC_APPLY L
+		WHERE LECA_CD = #{lecaCd}
+	</select>
+	
+	<!-- 강의실 배정 중 저장버튼 눌렀을 경우 강의계획신청 변경 -->
+	<update id="updateLecApply" parameterType="hashMap">
+		UPDATE  LEC_APPLY
+		SET     LECA_ROOM = #{lecaRoom}, LECA_UNIT = #{lecaUnit}     
+		WHERE   LECA_CD = #{lecaCd}
+	</update>
+	
+	<!-- 강의실 배정 중 저장버튼을 눌렀을 경우 시간표 테이블 insert -->
+	<insert id="insertTimetable" parameterType="hashMap">
+		INSERT INTO TIMETABLE(TM_CD, LECA_CD)
+		VALUES(#{tmCd}, #{lecaCd})
+	</insert>
+	
+	<!-- 강의실 배정 중 저장버튼 눌렀을 경우 강의계획신청 중 결재자, 결재일자, 승인여부 변경 -->
+	<update id="updateApproval" parameterType="hashMap">
+		UPDATE LEC_APPLY
+		SET LECA_YN = 1, LECA_ADT = SYSDATE, MGR_CD = #{mgrCd}
+		WHERE LECA_CD = #{lecaCd}
+	</update>
+	
+	<!-- 포틀릿 교수 결재 내역 -->
+	<select id="portletProApproval" parameterType="int" resultType="lecApplyVO">
+		SELECT  SUB_CD, 
+		        LECA_NM, 
+		        TO_CHAR(LECA_DT, 'YYYY-MM-DD') AS lecaRoom,
+		        (CASE WHEN LECA_YN = 0 THEN '승인대기'
+		              WHEN LECA_YN = 1 THEN '승인'
+		              WHEN LECA_YN = 2 THEN '반려'
+		              END) AS lecaCon
+		FROM LEC_APPLY 
+		WHERE PRO_CD = #{proCd}
+	</select>
+	
+	<!-- 포틀릿 학사관리자 결재 내역 -->
+	<select id="portletMgrApproval" resultType="lecApplyVO">
+		SELECT *
+		FROM(
+		WITH U AS(
+				SELECT L.LECA_DT AS lecaDt,
+				        (CASE WHEN L.LECA_YN = 0 THEN '승인대기'
+						              WHEN L.LECA_YN = 1 THEN '승인'
+				                      WHEN L.LECA_YN = 2 THEN '반려'
+						        END) AS lecaCon, (SELECT COMD_NM  FROM COMMON_DETAIL WHERE COMD_CD = L.LECA_GUBUN) AS lecaBook,
+				        (SELECT MEM_NM FROM MEMBER WHERE L.PRO_CD = MEM_CD) AS lecaNote
+				FROM LEC_APPLY L
+				WHERE L.LECA_IMSI IS NULL
+				UNION ALL 
+				SELECT SCLH_DT AS lecaDt, (CASE WHEN SCLH_YN = 0 THEN '승인대기'
+						              WHEN SCLH_YN = 1 THEN '승인'
+				                      WHEN SCLH_YN = 2 THEN '반려'
+						        END) AS lecaCon, (SELECT COMD_NM  FROM COMMON_DETAIL WHERE COMD_CD = S.SCLH_GUBUN) AS lecaGubun,
+				                (SELECT MEM_NM FROM MEMBER WHERE S.MEM_CD = MEM_CD) AS lecaNote
+				FROM SCL_HISTORY S
+		WHERE S.SCL_CD = 3
+		)
+		SELECT U.*
+		FROM U
+		WHERE 1 = 1
+		ORDER BY U.lecaCon DESC
+		)
+		<![CDATA[
+			WHERE ROWNUM <= 10
+		]]>
+	</select>
+	
+	<!-- 장학생 결재 리스트 내역 -->
+	<select id="schApprovalHistory" resultType="lecApplyVO">
+		SELECT S.SCLH_CD AS LECA_CD, S.SCLH_DT AS LECA_DT, S.SCLH_ADT AS lecaAdt, MEM_CD AS PRO_CD,
+		        (CASE WHEN S.SCLH_YN = 0 THEN '승인대기'
+		                      WHEN S.SCLH_YN = 1 THEN '승인'
+		                        WHEN S.SCLH_YN = 2 THEN '반려'
+		                END) AS LECA_CON, (SELECT COMD_NM  FROM COMMON_DETAIL WHERE COMD_CD = S.SCLH_GUBUN) AS LECA_GRADE,
+		            (SELECT MEM_NM FROM MEMBER WHERE S.MEM_CD = MEM_CD) AS LECA_NM,
+		            (SELECT D.DEP_NM FROM DEPARTMENT D, PROFESSOR P WHERE P.DEP_CD = D.DEP_CD AND S.MEM_CD = P.PRO_CD) AS LECA_NOTE,
+		            NVL((SELECT MEM_NM FROM MEMBER WHERE S.MGR_CD = MEM_CD), '-') AS LECA_ROOM,
+		            NVL((SELECT C.COMD_NM FROM COMMON_DETAIL C, MANAGER M WHERE C.COMD_CD = M.MGR_DIV AND M.MGR_CD = S.MGR_CD), '-') AS LECA_BOOK,
+		            TO_CHAR((SELECT SP.SCL_AMT FROM SCHOLARSHIP SP WHERE SP.SCL_CD = S.SCL_CD), 'FM999,999,999,999') AS LECA_RSN
+		FROM SCL_HISTORY S
+		WHERE S.SCL_CD = 3
+	</select>
+	
+	<!-- 장학생 결재 중 학생 기초정보 -->
+	<select id="stuInfo" parameterType="int" resultType="hashMap">
+		SELECT  (SELECT D.DEP_NM FROM DEPARTMENT D WHERE S.DEP_CD = D.DEP_CD) AS DEP_NM,
+		        (SELECT C.COL_NM FROM DEPARTMENT D, COLLEGE C WHERE S.DEP_CD = D.DEP_CD AND D.COL_CD = C.COL_CD) AS COL_NM,
+		        (SELECT M.MEM_NM FROM MEMBER M WHERE S.STU_CD = M.MEM_CD) AS STU_NM,
+		        S.STU_YR,
+		        S.STU_SEM,
+		        S.STU_CD,
+		        NVL((SELECT C.COMD_NM 
+		        FROM COMMON_DETAIL C, RECORD R, (SELECT C.COMD_NM 
+		                FROM COMMON_DETAIL C, RECORD R  
+		                WHERE C.COMD_CD = R.REC_CATE ORDER BY R.REC_YDT ASC) 
+		        WHERE ROWNUM = 1
+		        AND   R.REC_CATE = C.COMD_CD
+		        AND   R.STU_CD = S.STU_CD), '재학') AS STU_RECORD,
+		        (SELECT M.MEM_NM FROM MEMBER M WHERE M.MEM_CD = S.STU_PRO) AS PRO_NM
+		FROM    STUDENT S
+		WHERE   S.STU_CD = (SELECT SH.STU_CD FROM SCL_HISTORY SH WHERE S.STU_CD = SH.STU_CD AND SH.SCLH_CD = #{sclhCd})
+	</select>
+	
+	<!-- 장학생 결재 중 장학금 지급내역 -->
+	<select id="stuSchHistory" parameterType="int" resultType="hashMap">
+		SELECT  B.SCL_NM, 
+		        TO_CHAR(A.SCLH_DT,'YYYY') AS SCLH_DT,
+		        CASE WHEN MOD(A.SCLH_SEM,2) =1 THEN 1 ELSE 2 END AS SCLH_SEM, 
+		        TO_CHAR(A.SCLH_AMT, 'FM999,999,999,999') AS SCLH_AMT
+		FROM    SCL_HISTORY A, SCHOLARSHIP B
+		WHERE A.SCL_CD = B.SCL_CD 
+		AND SCLH_YN = 1 
+		AND STU_CD = #{stuCd}
+		ORDER BY A.SCLH_SEM DESC
+	</select>
+	
+	<!-- 장학생 결재 중 승인했을 경우 -->
+	<update id="schApprovalOk" parameterType="hashMap">
+		UPDATE  SCL_HISTORY
+		SET     SCLH_ADT = SYSDATE,
+		        MGR_CD = #{mgrCd},
+		        SCLH_YN = 1
+		WHERE   SCLH_CD = #{sclhCd}
+	</update>
+	
+	<!-- 메인화면 교수의 결재 신청/완료 건수 -->
+	<select id="getProApprCnt" parameterType="int" resultType="approvalVO">
+		SELECT  (
+		            (SELECT COUNT(LECA_CD) FROM LEC_APPLY WHERE PRO_CD = 200231111 AND LECA_YN = 0)
+		            +
+		            (SELECT COUNT(SCLH_CD) FROM SCL_HISTORY WHERE MEM_CD = 200231111 AND SCLH_YN = 0)
+		        ) APPR_CNTN
+		    ,   (
+		            (SELECT COUNT(LECA_CD) FROM LEC_APPLY WHERE PRO_CD = 200231111 AND LECA_YN != 0) 
+		            +
+		            (SELECT COUNT(SCLH_CD) FROM SCL_HISTORY WHERE MEM_CD = 200231111 AND SCLH_YN = 1)
+		        ) APPR_CNTY
+		FROM DUAL
+	</select>
+	
+	<!-- 메인화면 관리자의 결재 신청/완료 건수 -->
+	<select id="getMgrApprCnt" resultType="approvalVO">
+		SELECT  (
+		            (SELECT COUNT(LECA_CD) FROM LEC_APPLY WHERE LECA_YN = 0 AND LECA_DT LIKE 22 || '%')
+		            +
+		            (SELECT COUNT(SCLH_CD) FROM SCL_HISTORY WHERE SCLH_YN = 0 AND SCLH_DT LIKE 22 || '%')
+		        ) APPR_CNTN
+		    ,   (
+		            (SELECT COUNT(LECA_CD) FROM LEC_APPLY WHERE LECA_YN != 0 AND LECA_DT LIKE 22 || '%') 
+		            +
+		            (SELECT COUNT(SCLH_CD) FROM SCL_HISTORY WHERE SCLH_YN = 1 AND SCLH_DT LIKE 22 || '%')
+		        ) APPR_CNTY
+		FROM DUAL
+	</select>
+	
+	<!-- 관리자 강의계획서 결재 중 이미 승인이나 반려되었는지 확인 -->
+	<select id="confirmYn" parameterType="int" resultType="int">
+		SELECT  COUNT(*)
+		FROM    LEC_APPLY
+		WHERE   LECA_CD = #{lecaCd}
+		AND     LECA_YN IN (1, 2)
+	</select>
+</mapper>

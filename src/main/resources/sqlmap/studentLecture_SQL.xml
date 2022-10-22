@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 
+	namespace : xml파일은 여러개일 수 있음.
+	이를 구별하기 위한 식별 용도로 사용
+-->
+<mapper namespace="kr.ac.lms.mapper.StudentLectureMapper">
+
+	<resultMap type="lecApplyVO" id="lecApplyMap">
+		<result property="lecaCd" column="LECA_CD" />
+		<result property="subCd" column="SUB_CD" />
+		<result property="lecCd" column="LEC_CD" />
+		<result property="proCd" column="PRO_CD" />
+		<result property="lecaCate" column="LECA_CATE" />
+		<result property="lecaYr" column="LECA_YR" />
+		<result property="lecaSem" column="LECA_SEM" />
+		<result property="lecaNm" column="LECA_NM" />
+		<result property="lecaCon" column="LECA_CON" />
+		<result property="lecaTrg" column="LECA_TRG" />
+		<result property="lecaCrd" column="LECA_CRD" />
+		<result property="lecaPer" column="LECA_PER" />
+		<result property="lecaMax" column="LECA_MAX" />
+		<result property="lecaRoom" column="LECA_ROOM" />
+		<result property="lecaUnit" column="LECA_UNIT" />
+		<result property="lecaBook" column="LECA_BOOK" />
+		<result property="lecaNote" column="LECA_NOTE" />
+		<result property="lecaDt" column="LECA_DT" />
+		<result property="lecaGrade" column="LECA_GRADE" />
+		<result property="lecaImsi" column="LECA_IMSI" />
+		<result property="lecaYn" column="LECA_YN" />
+		<result property="lecaTt" column="LECA_TT" />
+		<collection property="stuLecVOList" resultMap="stuLecVOMap"></collection>
+	</resultMap>
+		
+	<resultMap type="stuLecVO" id="stuLecVOMap">
+		<result property="lecCd" column="LEC_CD" />
+		<result property="stuCd" column="STU_CD" />
+		<result property="slScore" column="SL_SCORE" />
+	</resultMap>
+
+
+	<!-- 학생 대시보드 검색 조건-->
+	<sql id="deshStu">
+		<if test="year != null and !year.equals('') and sem != null and !sem.equals('')">
+			AND LA.LECA_YR = #{year}
+	        AND LA.LECA_SEM = #{sem}
+		</if>
+		
+		<if test="(year == null or year.equals('')) and (sem == null or sem.equals(''))">
+			AND LA.LECA_YR = TO_CHAR(SYSDATE, 'YYYY')
+	        AND LA.LECA_SEM = ((CASE WHEN EXTRACT(MONTH FROM SYSDATE) IN ('8','9','10','11','12','1') THEN 2
+	        						WHEN EXTRACT(MONTH FROM SYSDATE) IN ('2','3','4','5','6','7') THEN 1
+	        					END))
+		</if>
+	</sql>
+
+	<!-- 대시보드 -->
+	<select id="getStuLecList" parameterType="hashmap" resultType="lecApplyVO">
+		SELECT LA.LECA_CD, LA.LECA_YR, LA.LECA_SEM, LA.LECA_NM, LA.LEC_CD
+		FROM STU_LEC SL INNER JOIN LEC_APPLY LA ON(SL.LEC_CD = LA.LEC_CD)
+		WHERE STU_CD = #{stuCd}
+		<include refid="deshStu"></include>
+	</select>
+
+	<!-- 년도 검색 -->
+	<select id="getLecaYr" parameterType="int" resultType="lecApplyVO">
+		SELECT DISTINCT(LA.LECA_YR)
+		FROM STU_LEC SL INNER JOIN LEC_APPLY LA ON(SL.LEC_CD = LA.LEC_CD)
+		WHERE SL.STU_CD = #{stuCd}
+		ORDER BY LA.LECA_YR DESC
+	</select>
+	<!-- 학기 검색 -->
+	<select id="getLecaSem" parameterType="hashMap" resultType="lecApplyVO">
+		SELECT DISTINCT(LA.LECA_SEM)
+		FROM STU_LEC SL INNER JOIN LEC_APPLY LA ON(SL.LEC_CD = LA.LEC_CD)
+		WHERE SL.STU_CD = #{stuCd}
+		AND LA.LECA_YR = #{lecaYr}
+	</select>
+
+	<!-- 시험 제출 여부 확인 -->
+	<select id="checkQuizSubmit" resultMap="testVOMap" parameterType="int">
+		WITH U AS(
+				    SELECT ROW_NUMBER() OVER(ORDER BY T.TEST_CD DESC) RNUM, T.*
+				    FROM(
+							SELECT  
+		                        TT.TEST_CD,
+		                        TT.LEC_CD,
+		                        TT.TEST_NM,
+		                        TT.TEST_CON,
+		                        TT.TEST_REG,
+		                        TT.TEST_ST,
+		                        TT.TEST_ET,
+		                        ST.ST_CD, 
+		                        ST.STU_CD,
+		                        ST.ST_SCORE, 
+		                        ST.ST_DT
+		                    FROM STU_TEST ST, TEST TT
+		                    WHERE ST.TEST_CD = TT.TEST_CD
+		                    AND ST.STU_CD = #{stuCd}
+				    )T
+			)
+			SELECT U.*
+			FROM U
+	        ORDER BY RNUM ASC
+	</select>
+
+
+	<!-- 제출 퀴즈 부모 -->
+	<insert id="stuTestInsert" parameterType="stuTestVO">
+		<selectKey order="AFTER" resultType="int" keyProperty="stCd">
+			SELECT NVL(MAX(ST_CD),0) FROM STU_TEST
+		</selectKey>
+		INSERT INTO STU_TEST (ST_CD, TEST_CD, LEC_CD, STU_CD, ST_SCORE, ST_DT)
+		VALUES ((SELECT NVL(MAX(ST_CD),0)+1 FROM STU_TEST), #{testCd}, #{lecCd}, #{stuCd}, ROUND((#{stScore}/(5* (SELECT COUNT(TEQ_CD) TEQ_CD FROM TEST_Q WHERE TEST_CD = #{testCd})))*100), SYSDATE)
+	</insert>
+
+	<!-- 제출 퀴즈 상세 (자식)-->
+	<update id="testDetailInsert" parameterType="hashmap">
+		INSERT INTO TEST_DETAIL (TD_CD, ST_CD, TEQ_CD, TD_ANSWER)
+		SELECT TD_SEQ.NEXTVAL AS TD_CD, #{stCd}
+		, T.*
+		FROM(
+		<foreach collection="list" item="testDetailVO" separator="UNION ALL">
+			SELECT	#{testDetailVO.teqCd},
+					#{testDetailVO.tdAnswer}
+			FROM DUAL
+		</foreach>
+		)T
+	</update>
+
+	<resultMap type="testVO" id="testVOMap">
+		<id property="testCd" column="TEST_CD" />
+		<result property="lecCd" column="LEC_CD" />
+		<result property="testNm" column="TEST_NM" />
+		<result property="testCon" column="TEST_CON" />
+		<result property="testReg" column="TEST_REG" />
+		<result property="testSt" column="TEST_ST" />
+		<result property="testEt" column="TEST_ET" />
+		<result property="stScore" column="ST_SCORE" />
+		<collection property="stuTestVO" resultMap="stuTestVOMap"></collection>
+		<collection property="testQVOList" resultMap="testQVOMap"></collection>
+		<collection property="testDetailVOList" resultMap="testDetailVOMap"></collection>
+	</resultMap>
+	<resultMap type="testQVO" id="testQVOMap">
+		<id property="teqCd" column="TEQ_CD" />
+		<result property="teqNo" column="TEQ_NO" />
+		<result property="teqOp1" column="TEQ_OP1" />
+		<result property="teqOp2" column="TEQ_OP2" />
+		<result property="teqOp3" column="TEQ_OP3" />
+		<result property="teqOp4" column="TEQ_OP4" />
+		<result property="teqAnswer" column="TEQ_ANSWER" />
+		
+	</resultMap>
+	
+	<resultMap type="stuTestVO" id="stuTestVOMap">
+		<id property="stCd" column="ST_CD" />
+		<result property="testCd" column="TEST_CD" />
+		<result property="lecCd" column="LEC_CD" />
+		<result property="stuCd" column="STU_CD" />
+		<result property="stScore" column="ST_SCORE" />
+		<result property="stDt" column="ST_DT" />
+	</resultMap>
+	<resultMap type="testDetailVO" id="testDetailVOMap">
+		<result property="tdCd" column="TD_CD"/>
+		<result property="teqCd" column="TEQ_CD"/>
+		<result property="stCd" column="ST_CD"/>
+		<result property="tdAnswer" column="TD_ANSWER"/>
+	</resultMap>
+
+	<!-- 퀴즈 학생 제출 답안과 점수 확인 -->
+	<select id="stuTestDetail" parameterType="hashmap" resultMap="testVOMap">
+			SELECT  T.TEST_CD, T.LEC_CD, T.TEST_NM, T.TEST_CON, T.TEST_REG, T.TEST_ST, T.TEST_ET
+               ,   Q.TEQ_CD, Q.TEST_CD, Q.TEQ_NO, Q.TEQ_OP1, Q.TEQ_OP2, Q.TEQ_OP3, Q.TEQ_OP4, Q.TEQ_ANSWER
+               ,   TD.TD_CD, TD.TEQ_CD, TD.ST_CD, TD.TD_ANSWER, (SELECT ST_SCORE FROM STU_TEST WHERE STU_CD = #{stuCd} AND LEC_CD = #{lecCd} AND TEST_CD = #{testCd}) ST_SCORE
+            FROM TEST T, TEST_Q Q,  TEST_DETAIL TD
+            WHERE Q.TEST_CD = T.TEST_CD
+            AND TD.TEQ_CD = Q.TEQ_CD
+            AND td.teq_cd = q.teq_cd
+            AND T.TEST_CD = #{testCd}
+            AND TD.ST_CD = (SELECT ST_CD FROM STU_TEST WHERE STU_CD = #{stuCd} AND LEC_CD = #{lecCd} AND TEST_CD = #{testCd})
+            ORDER BY Q.TEQ_CD
+	</select>
+	
+
+
+	<!-- 질문게시판 리스트 조회-->
+	<select id="getLecQnaList" parameterType="int" resultType="lecQnaVO">
+		WITH U AS(
+		    SELECT ROW_NUMBER() OVER(ORDER BY T.LQNA_CD ASC) RNUM, T.*
+		    FROM(
+					SELECT 	L.LQNA_CD
+                        ,   L.LEC_CD
+                        ,   L.STU_CD
+                        ,   M.MEM_NM
+                        ,   L.LQNA_TTL
+                        ,   L.LQNA_CON
+                        ,   L.LQNA_DT
+                        ,   NVL(L.LQNA_HIT, 0) AS LQNA_HIT
+                        ,   COUNT(R.LQNAR_CD) CNT_LQNAR
+                    FROM LEC_QNA L INNER JOIN MEMBER M ON (L.STU_CD = M.MEM_CD)
+                                   LEFT OUTER JOIN LEC_QNAR R ON (L.LQNA_CD = R.LQNA_CD)
+                    WHERE LEC_CD = #{lecCd}
+                    GROUP BY L.LQNA_CD
+                        ,   L.LEC_CD
+                        ,   L.STU_CD
+                        ,   M.MEM_NM
+                        ,   L.LQNA_TTL
+                        ,   L.LQNA_CON
+                        ,   L.LQNA_DT
+                        ,   LQNA_HIT
+				    )T
+		)
+		SELECT U.*
+		FROM U
+        ORDER BY RNUM DESC
+	</select>
+
+	<!-- 질문게시판 상세 조회 -->
+	<select id="getLecQnaDetail" parameterType="int" resultType="lecQnaVO">
+		SELECT 	L.LQNA_CD
+		    ,   L.LEC_CD
+		    ,   L.STU_CD
+		    ,   M.MEM_NM
+		    ,   L.LQNA_TTL
+		    ,   L.LQNA_CON
+		    ,   L.LQNA_DT
+		    ,   NVL(L.LQNA_HIT, 0) AS LQNA_HIT
+		FROM LEC_QNA L INNER JOIN MEMBER M ON L.STU_CD = M.MEM_CD
+		WHERE L.LQNA_CD = #{lqnaCd}
+	</select>
+	
+	<!-- 질문게시판 수정 -->
+	<update id="lecQnaUpdate" parameterType="lecQnaVO">
+		UPDATE LEC_QNA
+		SET LQNA_TTL = #{lqnaTtl}, LQNA_CON = #{lqnaCon}, LQNA_DT = SYSDATE
+		WHERE LQNA_CD = #{lqnaCd}
+	</update>
+
+	<!-- 질문게시판 삭제 -->
+	<delete id="lecQnaDelete" parameterType="int">
+		DELETE FROM LEC_QNA
+		WHERE LQNA_CD = #{lqnaCd}
+	</delete>
+
+	<!-- 질문게시판의 모든 답글 삭제 -->
+	<delete id="lecQnarAllDelete" parameterType="int">
+		DELETE FROM LEC_QNAR
+		WHERE LQNA_CD = #{lqnaCd}
+	</delete>
+
+	<!-- 질문게시판 등록 -->
+	<insert id="lecQnaInsert" parameterType="lecQnaVO">
+		<selectKey order="BEFORE" resultType="int" keyProperty="lqnaCd">
+			SELECT NVL(MAX(LQNA_CD),0)+1 FROM LEC_QNA
+		</selectKey>
+		INSERT INTO LEC_QNA(LQNA_CD, LEC_CD, STU_CD, LQNA_TTL, LQNA_CON, LQNA_DT, LQNA_HIT)
+		VALUES(#{lqnaCd}, #{lecCd}, #{stuCd}, #{lqnaTtl}, #{lqnaCon}, SYSDATE, 0)
+	</insert>
+	
+	<!-- 질문게시판 조회수 증가 -->
+	<update id="lecQnaHit" parameterType="int">
+		UPDATE LEC_QNA
+		SET LQNA_HIT = LQNA_HIT + 1
+		WHERE LQNA_CD = #{lqnaCd}
+	</update>
+	
+	<!-- 질문게시판 답글 조회-->
+	<select id="getLecQnar" parameterType="int" resultType="lecQnarVO">
+		SELECT  L.LQNAR_CD
+			,	L.LQNA_CD
+		    ,   L.MEM_CD
+		    ,   M.MEM_NM
+		    ,   L.LQNAR_CON
+		    ,   L.LQNAR_DT
+		FROM LEC_QNAR L INNER JOIN MEMBER M ON L.MEM_CD = M.MEM_CD
+		WHERE L.LQNA_CD = #{lqnaCd}
+        ORDER BY L.LQNAR_DT DESC
+	</select>
+	
+	<!-- 질문게시판 등록 -->
+	<insert id="lecqnarInsert" parameterType="lecQnarVO">
+		<selectKey order="BEFORE" resultType="int" keyProperty="lqnarCd">
+			SELECT NVL(MAX(LQNAR_CD),0)+1 FROM LEC_QNAR
+		</selectKey>
+			INSERT INTO LEC_QNAR(LQNAR_CD, LQNA_CD, LQNAR_CON, LQNAR_DT, MEM_CD)
+			VALUES(#{lqnarCd}, #{lqnaCd}, #{lqnarCon}, SYSDATE, #{memCd})
+	</insert>
+	
+	<!-- 질문게시판 답글 수정 -->
+	<update id="lecQnarUpdate" parameterType="lecQnarVO">
+		UPDATE LEC_QNAR
+		SET LQNAR_CON = #{lqnarCon}, LQNAR_DT = SYSDATE
+		WHERE LQNAR_CD = #{lqnarCd}
+	</update>
+	
+	<!-- 질문게시판 삭제 -->
+	<delete id="lecQnarDelete" parameterType="int">
+		DELETE FROM LEC_QNAR
+		WHERE LQNAR_CD = #{lqnarCd}
+	</delete>
+	
+	<!-- 과제 및 평가 등록 -->
+	<insert id="stuLecTaskInsert" parameterType="taskSubmitVO">
+		<selectKey order="BEFORE" resultType="int" keyProperty="tsubCd">
+			SELECT NVL(MAX(TSUB_CD),0)+1 FROM TASK_SUBMIT
+		</selectKey>
+		INSERT INTO TASK_SUBMIT (
+		        TSUB_CD
+		    ,   TASK_CD
+		    ,   LEC_CD
+		    ,   STU_CD
+		    ,   TSUB_DT
+		    ,   TSUB_CON
+		    ,   TSUB_FNM
+		    ,   TSUB_SCORE
+		) VALUES (
+		        #{tsubCd},
+		        #{taskCd},
+		        #{lecCd},
+		        #{stuCd},
+		        SYSDATE,
+		        #{tsubCon},
+		        #{tsubFnm},
+		        0
+		)  
+	</insert>
+	
+	<!-- 과제 제출 확인 -->
+	<select id="lecTaskSubmit" parameterType="int" resultType="taskSubmitVO">
+		SELECT  TSUB_CD, TASK_CD, LEC_CD, STU_CD, TSUB_DT, TSUB_CON, TSUB_FNM, TSUB_SCORE
+		FROM TASK_SUBMIT
+		WHERE STU_CD = #{stuCd}
+	</select>
+	
+	<!-- 학생 제출 과제 상세  -->
+	<select id="stuLecTaskDetail" parameterType="hashmap" resultType="taskSubmitVO">
+		SELECT  TSUB_CD, TASK_CD, LEC_CD, STU_CD, TSUB_DT, TSUB_CON, TSUB_FNM, TSUB_SCORE
+		FROM TASK_SUBMIT
+		WHERE STU_CD = #{stuCd}
+		AND TASK_CD = #{taskCd}
+	</select>
+	
+	<!-- 과제 및 평가 수정 -->
+	<update id="stulecTaskUpdate" parameterType="taskSubmitVO">
+		UPDATE TASK_SUBMIT
+		SET TSUB_CON = #{tsubCon}, TSUB_DT = SYSDATE, TSUB_FNM = #{tsubFnm}
+		WHERE TSUB_CD = #{tsubCd}
+	</update>
+	
+	<!-- 과제 및 평가 삭제 -->
+	<delete id="stuLecTaskDelete" parameterType="int">
+		DELETE FROM TASK_SUBMIT
+		WHERE TSUB_CD = #{tsubCd}
+	</delete>
+	
+	<!-- 학생 출결 조회 -->
+<!-- 		    ,   CASE   WHEN ATEN_CATE = 'A101' THEN '○' -->
+<!-- 		                WHEN ATEN_CATE = 'A102' THEN '△' -->
+<!-- 		                WHEN ATEN_CATE = 'A103' THEN '×' -->
+<!-- 		                WHEN ATEN_CATE = 'A104' THEN '◎' -->
+<!-- 		        END AS ATEN_CATE -->
+	<select id="getStuLecAttend" parameterType="hashmap" resultType="attenadenceVO">
+		SELECT  ATEN_WK
+		    ,   ATEN_HR
+		    ,	ATEN_CATE
+		FROM ATTENADENCE
+		WHERE STU_CD = #{stuCd}
+		AND LEC_CD = #{lecCd}
+		ORDER BY ATEN_WK, ATEN_HR
+	</select>
+	
+	<!-- 최종 성적 조회 -->
+	<select id="getStuGrade" parameterType="hashmap" resultType="stuLecVO">
+		SELECT NVL((SELECT C.COMD_NM FROM COMMON_DETAIL C WHERE C.COMD_CD = S.SL_SCORE), '-') AS SL_SCORE
+        FROM STU_LEC S WHERE LEC_CD = #{lecCd} AND STU_CD = #{stuCd}
+	</select>
+	
+	<!-- 메인 당학기 강의 조회(학생) -->
+	<select id="portGetCurrentLec" parameterType="int" resultType="lecApplyVO">
+		SELECT LA.LECA_CD, LA.LECA_YR, LA.LECA_SEM, LA.LECA_NM, LA.LEC_CD, (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = LA.PRO_CD) LECA_CON
+		FROM STU_LEC SL INNER JOIN LEC_APPLY LA ON(SL.LEC_CD = LA.LEC_CD)
+		WHERE STU_CD = #{stuCd}
+        AND LA.LECA_YR = TO_CHAR(SYSDATE, 'YYYY')
+        AND LA.LECA_SEM = ((CASE WHEN EXTRACT(MONTH FROM SYSDATE) IN ('8','9','10','11','12','1') THEN 2
+                                WHEN EXTRACT(MONTH FROM SYSDATE) IN ('2','3','4','5','6','7') THEN 1
+                            END))
+	</select>
+	
+	<!-- 메인 당학기 강의 조회(교수) -->
+	<select id="portGetCurrentLecPro" parameterType="int" resultType="lecApplyVO">
+		SELECT L.LECA_CD, L.SUB_CD, L.LEC_CD, L.PRO_CD, C1.COMD_NM AS LECA_CATE, L.LECA_YR, L.LECA_SEM, L.LECA_NM
+		    , L.LECA_TRG, L.LECA_CRD, L.LECA_PER, L.LECA_MAX, L.LECA_TM1, L.LECA_TM2, L.LECA_ROOM, L.LECA_UNIT, L.LECA_BOOK
+		    , L.LECA_NOTE, L.LECA_DT, C2.COMD_NM AS LECA_GRADE, L.LECA_IMSI, L.LECA_YN, (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = #{proCd}) LECA_CON
+		FROM LEC_APPLY L INNER JOIN COMMON_DETAIL C1 ON(L.LECA_CATE = C1.COMD_CD) INNER JOIN COMMON_DETAIL C2 ON(L.LECA_GRADE = C2.COMD_CD)
+		WHERE PRO_CD = #{proCd}
+		AND LECA_YN = 1
+        AND L.LECA_YR = TO_CHAR(SYSDATE, 'YYYY')
+	    AND L.LECA_SEM = ((CASE WHEN EXTRACT(MONTH FROM SYSDATE) IN ('8','9','10','11','12','1') THEN 2
+                                WHEN EXTRACT(MONTH FROM SYSDATE) IN ('2','3','4','5','6','7') THEN 1
+                            END))
+	</select>
+	
+</mapper>

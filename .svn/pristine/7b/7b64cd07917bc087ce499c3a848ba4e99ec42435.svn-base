@@ -1,0 +1,22 @@
+{
+  "name": "src",
+  "lockfileVersion": 2,
+  "requires": true,
+  "packages": {
+    "node_modules/gridstack": {
+      "version": "6.0.1",
+      "resolved": "https://registry.npmjs.org/gridstack/-/gridstack-6.0.1.tgz",
+      "integrity": "sha512-j7FbRbkYjMr/pKPHRkAx9j9N4q+3+v6UfPnIf0zM3CJtA1HOFxpTLHjnKtqvCGm0hdH0jSPuC9NmxlA4x/oXKg==",
+      "funding": [
+        {
+          "type": "paypal",
+          "url": "https://www.paypal.me/alaind831"
+        },
+        {
+          "type": "venmo",
+          "url": "https://www.venmo.com/adumesny"
+        }
+      ]
+    }
+  }
+}

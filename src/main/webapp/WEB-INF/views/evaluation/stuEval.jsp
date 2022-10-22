@@ -1,0 +1,378 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!DOCTYPE html>
+<html>
+<head>
+<title></title>
+<link rel="stylesheet" href="/resources/css/suwon.css">
+<style type="text/css">
+#getStuLecEvalRound{
+	width : 100%;
+}
+#personalGradeInfo {
+    border: 1px solid gray;
+	padding: 10px;
+	background: #F3F8FF;
+	width: 100%;
+	min-width: 1200px;
+	max-width: 1700px;
+	margin: 0 auto;
+/* 	border-radius : 10px; */
+}
+#personalGradeInfo .round{
+	display : inline-block;
+	width : 24%;
+}
+#personalGradeInfo label{
+	width : 80px;
+	margin : 10px;
+}
+.stuEvalSelect{
+	display:inline-block;
+/* 	margin-left : 2%; */
+}
+#personalGradeInfo input{
+	width : 200px;
+ 	height: 33px;
+ 	background: #f9f9f9;
+ 	border: 1px solid gray;
+ 	border-radius : 5px;
+	padding-left : 5px;
+}
+#graduationView{
+	background: white;
+	width: 98.7%;
+	padding: 10px; 
+	text-align: center;
+	border : 1px solid lightgray;
+}
+#graduationView tr{
+	height : 34.6px;
+}
+
+th{
+	background: #f0f0f0;
+}
+#graduationView tbody tr:hover {
+   	color: #6c757d;
+   	background-color: #f1f3fa;
+   
+}
+#tgradeYellowBox {
+	background : lightyellow;
+	border: 1px solid lightgray;
+    padding: 10px; 
+    width: 100%;
+}
+#tgradeGreenText {
+	color : green;
+}
+#lecEvalDiv{
+	height: 493px; 
+	border: 1px solid lightgray; 
+	background: #f0f0f0;
+	width: 102%;
+}
+.btn-primary{
+ 	background : #2a5388;
+ 	border : #2a5388;
+ 	box-shadow : #2a5388;
+ }
+ .btn-primary:hover{
+ 	background : #4671af;
+ 	border : #4671af;
+ 	box-shadow : #4671af;
+ }
+ #getStuLecEvalConRound{
+ 	width: 100%;
+	min-width: 1200px;
+	max-width: 1700px;
+	margin: 0 auto;
+ }
+ .evlqCon{
+ 	text-align: left;
+ 	padding-left: 6px;
+ }
+ /*학생기초정보 테이블 css 시작*/
+ #stuInfoTable{
+ 	width : 100%;
+ 	border-left: 1px solid #001353;
+    border-right: 1px solid #001353;
+    border-top: 1px solid #001353;
+    border-bottom: 1px solid #001353;
+ }
+ #stuInfoTable th{
+ 	width : 9%;
+ 	text-align: right;
+ 	padding-right: 10px;
+ 	background: #F3F8FF;
+ 	color : #001353;
+ }
+ #stuInfoTable td{
+ 	width: 45px;
+/*  	padding: 2px; */
+ 	background: #F3F8FF;
+ }
+ .infoText{
+    margin: 1px;
+    width: 98%;
+    height: 28px;
+    padding-left : 5px;
+    font-size : 0.9em;
+    background : white;
+    border : 1px solid lightgray;
+    border-radius : 0.15em;
+ }
+  /*학생기초정보 테이블 css 끝*/
+</style>
+
+<script type="text/javascript" src="/resources/js/tui-grid.js"></script>
+<link rel="stylesheet" href="/resources/css/tui-grid.css" type="text/css">
+<script type="text/javascript" defer="defer">
+$(function() {
+	//학번
+	var memCd = $('#stuCd').val();
+	var data = {"memCd" : memCd};
+	var lecCd = 0;
+	//수강강의 리스트 가져오기
+	$.ajax({
+		url : "/lecEval/lecListPost",
+		data : JSON.stringify(data),
+		type : 'POST',
+		contentType : 'application/json;charset=utf-8',
+		dataType : 'JSON',
+		success : function(result) {
+			console.log(result);
+			$('#cntSpan').text(result.length);
+			grid = new tui.Grid({
+				el : document.getElementById('grid'),
+				data : result,
+				scrollX : true,
+				scrollY : true,
+				minBodyHeight : 450,
+				bodyHeight: 250,
+				columns : [
+					{header : '학수번호', name : 'subCd', filter : 'select', width : 110, align : 'center'},
+					{header : '과목명', name : 'lecaNm', filter : 'select', width : 170, align : 'center'},
+					{header : '담당교수', name : 'lecaCon', filter : 'select', width : 110, align : 'center'},
+					{header : '평가여부', name : 'lecaNote', align : 'center'},
+					{header : '강의코드', name : 'lecCd', hidden : true}
+				],
+				rowHeaders: ['rowNum'],
+				columnOptions: {
+			        resizable: true
+				}
+
+			});
+			
+			//해당 grid row를 선택했을 경우
+			grid.on('click', function(object){
+				var str = '';
+				lecCd = grid.getRow(object.rowKey).lecCd;
+				 
+				 //해당 row가 미완료일 경우에 평가지 보여주기
+				 if(grid.getRow(object.rowKey).lecaNote == '미완료'){
+					 $('#lecEvalDiv').empty();
+					 
+				 	//lecEvalDiv의 background 바꾸기
+				 	const element = document.getElementById('lecEvalDiv');
+				 	element.style.cssText = 'background-color: white';
+				 	                                                                                                                 
+				 	str += '<table border="1"  style=" width : 100%;" id="graduationView">                                           ';
+				 	str += '<tr>                                                                                                     ';
+				 	str += '	<th style="    width: 45px;">No</th>                                                                 ';
+				 	str += '	<th>평가문항</th>                                                                                    ';
+				 	str += '	<th style="width : 60px;">매우<br>그렇다</th>                                                        ';
+				 	str += '	<th style="width : 60px;">그렇다</th>                                                                ';
+				 	str += '	<th style="width : 60px;">보통<br>이다</th>                                                          ';
+				 	str += '	<th style="width : 60px;">그렇지<br>않다</th>                                                        ';
+				 	str += '	<th style="width : 60px;">매우<br>그렇지<br>않다</th>                                                ';
+				 	str += '</tr>                                                                                                    ';
+				 	str += '<c:forEach var="list" items="${list}">                                                                   ';
+				 	str += '<tr>                                                                                                     ';
+				 	str += '	<td>${list.evlqCd }</td>                                                                             ';
+				 	str += '	<td class="evlqCon">${list.evlqCon}</td>                                                                             ';
+				 	str += '	<td><input type="radio" name="${list.evlqCd}" value="5"></td>                                        ';
+				 	str += '	<td><input type="radio" name="${list.evlqCd}" value="4"></td>                                        ';
+				 	str += '	<td><input type="radio" name="${list.evlqCd}" value="3"></td>                                        ';
+				 	str += '	<td><input type="radio" name="${list.evlqCd}" value="2"></td>                                        ';
+				 	str += '	<td><input type="radio" name="${list.evlqCd}" value="1"></td>                                        ';
+				 	str += '</tr>                                                                                                    ';
+				 	str += '</c:forEach>                                                                                             ';
+				 	str += '<tr>                                                                                                     ';
+				 	str += '	<td>기타</td>                                                                                        ';
+				 	str += '	<td class="evlqCon" >이 강의에서 좋았던 점이나 개선할 점이 있다면 <br>자유롭게 작성하여 주십시오.</td>                ';
+				 	str += '	<td colspan="5"><textarea id="content" style="width:100%; border: 0; resize: none;"></textarea></td> ';
+				 	str += '</tr>                                                                                                    ';
+				 	str += '</table>                                                                                                 ';
+				 	
+				 	$('#lecEvalDiv').append(str);
+				 }else{
+					 alert("이미 완료한 평가입니다.");
+					 $('#lecEvalDiv').empty();
+					//lecEvalDiv의 background 바꾸기
+				 	const element = document.getElementById('lecEvalDiv');
+				 	element.style.cssText = 'background-color: lightgray';
+				 }
+				 
+			})
+			
+			}
+	});	//tui-grid ajax 끝
+	
+	//저장버튼을 눌렀을 경우
+	$('#evalSaveBtn').on('click', function(){
+		
+		var avg = 0;
+		var no1 = parseInt($('input:radio[name="1"]:checked').val());
+		var no2 = parseInt($('input:radio[name="2"]:checked').val());
+		var no3 = parseInt($('input:radio[name="3"]:checked').val());
+		var no4 = parseInt($('input:radio[name="4"]:checked').val());
+		var no5 = parseInt($('input:radio[name="5"]:checked').val());
+		var no6 = parseInt($('input:radio[name="6"]:checked').val());
+		var no7 = parseInt($('input:radio[name="7"]:checked').val());
+		var no8 = parseInt($('input:radio[name="8"]:checked').val());
+		var no9 = parseInt($('input:radio[name="9"]:checked').val());
+		var no10 = parseInt($('input:radio[name="10"]:checked').val());
+		var no11 = parseInt($('input:radio[name="11"]:checked').val());
+		var no12 = parseInt($('input:radio[name="12"]:checked').val());
+		var cnt = $('#content').val();
+		
+		if(!no1 || !no2 || !no3 || !no3 || !no4 || !no5 || !no6 || !no7
+				|| !no8 || !no9 || !no10 || !no11 || !no12 || !cnt){
+			alert("값을 모두 채워주세요")
+			return false;
+		}else{
+			var sum = no1 + no2 + no3 + no4 + no5 + no6 + no7 + no8 + no9 + no10 + no11 + no12;
+			avg = Math.round((sum / 12) * 100) / 100;
+		}
+		
+		var saveData = {"lecCd" : lecCd,
+						"stuCd" : memCd,
+						"evlScore" : avg,
+						"evlEtc" : cnt};
+		
+		//ajax를 통해 저장시키기 (강의코드, 학번, 평가점수, 기타의견내용 필요)
+		$.ajax({
+			url : "/lecEval/stuEvalSave",
+			data : JSON.stringify(saveData),
+			type : 'POST',
+			contentType : 'application/json;charset=utf-8',
+			dataType : 'JSON',
+			success : function(result) {
+				console.log(result);
+				if(result > 0){
+					alert("성공적으로 강의평가가 저장되었습니다.");
+					document.location.href= document.location.href;
+				}
+			}
+		})
+	})
+	
+	//사진 띄우기
+	$('#photoBtn').on('click', function() {
+		var memFnm = $('#memFnm').val();
+		
+		//memFnm : 이미지 이름.확장자
+		if(memFnm == null) {
+			alert("등록된 사진이 없습니다.");
+		}else {
+			
+			const img = new Image();
+			img.src = "/resources/profileImg/" + memFnm;
+			console.log("width : " + img.width + ", height : " + img.height);
+			
+			window.open(
+					"/tgrade/getPhoto?memFnm=" + memFnm,
+					"photo",
+					"width = 175, height = 210, left = 300, top = 150, history = no, resizable = no, status = no, scrollbars = yes, menubar = no"
+			);
+		}
+	});
+	
+	//시연데이터 버튼 클릭했을 경우
+	$('#dataBtn').on('click', function(){
+		for(var i=1; i<=6; i++){
+			$('input:radio[name=' + i + '][value='+ 5 +']').attr("checked", true);
+		}
+		for(var i=7; i<=12; i++){
+			$('input:radio[name=' + i + '][value='+ 4 +']').attr("checked", true);
+		}
+		$('#content').val("항상 질좋은 강의 준비해주세요 감사합니다.");
+	})
+});
+</script>
+</head>
+<body>
+<div id="getStuLecEvalRound">
+<div>
+	<i class="mdi mdi-home" style="font-size: 1.3em"></i> <i class="dripicons-chevron-right"></i> 강의정보 <i class="dripicons-chevron-right"></i> <span style="font-weight: bold;">강의평가</span>
+</div>
+<br>
+<table id = "stuInfoTable">
+	<c:forEach var="data" items="${data}">
+		<tr>
+			<td colspan="9" style="background: #F3F8FF; height: 10px;"></td>
+			<td style="display: none;"><input id="memFnm" type="hidden" value="${data.memFnm }"></td>
+		</tr>
+		<tr>
+			<th>학번</th>
+			<td><input type="text" id="stuCd" class="infoText" style="width: 68.5%;" value="${data.memCd }" disabled >
+			<button type="button" class="btn btn-secondary" id="photoBtn" style="height: 28px;margin-top:-2px;"><p style="margin-top: -4px;">사진</p></button>
+			</td>
+			<th>성명</th>
+			<td><input type="text" class="infoText" disabled value="${data.memNm }"></td>
+			<th>입학정보</th>
+			<td><input type="text" class="infoText" disabled value="${data.memAddr1 }"></td>
+			<th>연락처</th>
+			<td><input type="text" class="infoText" disabled value="${data.memTel }"></td>
+			<th></th>
+		</tr>
+		<tr>
+			<td colspan="9" style="background: #F3F8FF; height: 5px;"></td>
+		</tr>
+		<tr>
+			<th>소속</th>
+			<td><input type="text" class="infoText" disabled value="${data.memNme }"></td>
+			<th>학년</th>
+			<td><input type="text" class="infoText" disabled value="${data.memMl }"></td>
+			<th>변동</th>
+			<td><input type="text" class="infoText" disabled value="${data.memAddr2 }"></td>
+			<th>생년월일</th>
+			<td><input type="text" class="infoText" disabled value="${data.memReg1 }"></td>
+			<th></th>
+		</tr>
+		<tr>
+			<td colspan="9" style="background: #F3F8FF; height: 10px;"></td>
+		</tr>
+	</c:forEach>
+</table>
+
+<br><br>
+<div id="getStuLecEvalConRound">
+<div id="tgradeYellowBox">
+		<span id="tgradeGreenText" style="font-weight: bold;">
+		본 강의 평가 설문지는 익명으로 작성되며, 이번 학기 교과목의 수업진행에 대한 학생들의 솔직한 의견을 파악하여, 앞으로 보다 나은 강의를
+		하기 위한 목적으로 실시하는 것입니다. <br>따라서 학생 여러분은 각 평가 문항에 대하여 성실하고 진지하게 답변해 주시기 바랍니다.
+		</span>
+</div><br>
+<div  style="width : 38%; float: left;">
+<p class="stuEvalSelect" style="width : 39%; display: inline-block;"><i class="mdi mdi-record-circle" style="color: #001353; "></i>&ensp;수강강의</p>
+<p style="float: right; margin-right: 6px;">[총 <span style="color : #001353; font-weight: bold;" id="cntSpan"></span>건]</p>
+<div id="grid"></div>
+</div>
+<!-- <div> -->
+<!-- <input id="lecCd" type="text"> -->
+<!-- </div> -->
+<div style=" width : 60%; display: inline-block; margin-left: 10px; ">
+<p class="stuEvalSelect" style=" float: left; width: 130px;"><i class="mdi mdi-record-circle" style="color: #001353;"></i>&ensp;강의평가</p>
+<button id="dataBtn" class="btn btn-primary" type="button" style="margin-left: 660px;">자동 채우기</button>
+<button id="evalSaveBtn" class="btn btn-primary" type="button" style="float: right; margin-right: -18px;">저장</button>
+<div style="clear: both;"></div>
+<div id="lecEvalDiv"></div>
+</div>
+</div>
+<br>
+</div>
+</body>
+</html>

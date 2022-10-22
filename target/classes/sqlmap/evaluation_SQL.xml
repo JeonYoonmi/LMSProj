@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.ac.lms.mapper.LecEvaluationMapper">
+<select id="stuLecList" parameterType="int" resultType="lecApplyVO">
+	WITH U AS(
+	SELECT  LECA_NM, 
+	        M.MEM_NM AS lecaCon, 
+	        L.SUB_CD, 
+	        L.LEC_CD,
+	        L.LECA_SEM || '학기' AS lecaRsn,
+	        (SELECT C.COMD_NM FROM COMMON_DETAIL C WHERE L.LECA_CATE = C.COMD_CD) AS lecaCate,
+	        CASE WHEN E.EVL_CD IS NULL THEN '미완료'
+	        ELSE '완료'
+	        END lecaNote,
+	        (CASE WHEN EXTRACT(MONTH FROM SYSDATE) IN ('8','9','10','11','12','1') THEN '2학기'
+	                WHEN EXTRACT(MONTH FROM SYSDATE) IN ('2','3','4','5','6','7') THEN '1학기'
+	           END) AS HAK
+	FROM    STU_LEC S, LEC_APPLY L, MEMBER M, EVALUATION E
+	WHERE   E.LEC_CD (+) = S.LEC_CD
+	AND     E.STU_CD (+) = S.STU_CD
+	AND     L.LEC_CD = S.LEC_CD
+	AND     M.MEM_CD = L.PRO_CD
+	AND     S.STU_CD = #{stuCd}
+	AND     L.LECA_YR = (SELECT EXTRACT(YEAR FROM SYSDATE) FROM DUAL)
+	)
+	SELECT U.*
+	FROM U
+	WHERE U.HAK = U.lecaRsn
+</select>
+
+<!-- 강의 평가 항목 불러오기 -->
+<select id="selectEvalItem" resultType="evaluationQVO">
+	SELECT EVLQ_CD, EVLQ_CON
+	FROM EVALUATION_Q
+</select>
+
+<!-- 학생 강의평가 저장 -->
+<insert id="insertStuEval" parameterType="hashMap">
+	INSERT INTO EVALUATION(EVL_CD, LEC_CD, STU_CD, EVL_SCORE, EVL_ETC)
+	VALUES(EVAL_SEQ.NEXTVAL, #{lecCd}, #{stuCd}, #{evlScore}, #{evlEtc})
+</insert>
+
+<sql id="where">
+	<if test = "lecaYr != null and !lecaYr.equals('')">
+		AND L.LECA_YR = #{lecaYr}
+	</if>
+	<if test = "lecaSem != null and !lecaSem.equals('')">
+		AND L.LECA_SEM = #{lecaSem}
+	</if>
+</sql>
+
+<!-- 교수 수강강의 리스트 출력 -->
+<select id="selectProLec" parameterType="hashMap" resultType="lecApplyVO">
+	SELECT  L.SUB_CD, 
+	        L.LECA_NM, 
+	        L.LEC_CD,
+	        M.MEM_NM AS lecaCate,
+	        NVL(TO_CHAR(ROUND(SUM(E.EVL_SCORE) / COUNT(E.LEC_CD),2)), '-') AS lecaRoom
+	FROM    LEC_APPLY L, MEMBER M, EVALUATION E
+	WHERE   L.PRO_CD = #{proCd}
+	AND     L.LECA_YN = 1
+	AND     L.PRO_CD(+) = M.MEM_CD
+	AND     E.LEC_CD(+) = L.LEC_CD
+	<include refid="where"></include>
+	GROUP BY L.SUB_CD, L.LECA_NM, M.MEM_NM, L.LECA_SEM, L.LECA_YR, L.LEC_CD
+	ORDER BY lecaRoom
+</select>
+
+<!-- 교수 수강강의 리스트 상세정보 -->
+<select id="proLecListDetail" parameterType="int" resultType="hashMap">
+	SELECT  LA.SUB_CD AS subCd,
+	        (SELECT C.COMD_NM FROM COMMON_DETAIL C WHERE LA.LECA_CATE = C.COMD_CD) AS lecaCate,
+	        LA.LECA_NM AS lecaNm,
+	        (SELECT D.DEP_NM FROM DEPARTMENT D WHERE P.DEP_CD = D.DEP_CD) AS depNm,
+	        (SELECT C.COL_NM FROM COLLEGE C, DEPARTMENT D WHERE P.DEP_CD = D.DEP_CD AND D.COL_CD = C.COL_CD) AS colNm,
+	        MEM_NM AS memNm,
+	        (SELECT COUNT(*) FROM STU_LEC SL WHERE SL.LEC_CD = LA.LEC_CD) AS stuLecNum,
+	        (SELECT COUNT(E.STU_CD) FROM EVALUATION E WHERE E.LEC_CD = LA.LEC_CD) AS stuEvalNum
+	FROM    LEC_APPLY LA, MEMBER M, PROFESSOR P
+	WHERE   LA.LEC_CD = #{lecCd}
+	AND     LA.PRO_CD = M.MEM_CD
+	AND     M.MEM_CD = P.PRO_CD
+</select>
+
+<!-- 교수 기타의견 리스트(해당 강의) -->
+<select id="selectEctList" parameterType="int" resultType="evaluationVO">
+	SELECT  ROWNUM AS evlScore,
+	        EVL_ETC
+	FROM    EVALUATION
+	WHERE   LEC_CD = #{lecCd}
+</select>
+
+<!-- 교수 강의평가 중 해당 년 월 출력 -->
+<select id="getThisYr" resultType="hashMap">
+	SELECT  TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY')) YEAR,
+	        TO_NUMBER(CASE WHEN TO_CHAR(SYSDATE, 'MM') IN ('08', '09', '10', '11', '12', '01') THEN 2 ELSE 1 END) SEMESTER
+	FROM DUAL
+</select>
+
+<sql id="uwhere">
+	<if test = "lecaYr != null and !lecaYr.equals('')">
+		AND U.LECA_YR = #{lecaYr}
+	</if>
+	<if test = "lecaSem != null and !lecaSem.equals('')">
+		AND U.LECA_SEM = #{lecaSem}
+	</if>
+	<if test="lecaCate != null and !lecaCate.equals('')">
+		AND U.lecaCate LIKE '%' || #{lecaCate} || '%'
+	</if>
+	<if test="subCd != null and !subCd.equals('')">
+		AND U.SUB_CD = #{subCd}
+	</if>
+	<if test="lecaNm != null and !lecaNm.equals('')">
+		AND U.LECA_NM LIKE '%' || #{lecaNm} || '%'
+	</if>
+	<if test="lecaNote != null and !lecaNote.equals('')">
+		AND U.lecaNote LIKE '%' || #{lecaNote} || '%'
+	</if>
+	<if test="lecaGubun != null and !lecaGubun.equals('')">
+		AND U.lecaGubun = #{lecaGubun} 
+	</if>
+</sql>
+
+<!-- 관리자 강의평가 중 현재학기 수강강의 출력 -->
+<select id="selectAllLec" parameterType="hashMap" resultType="lecApplyVO">
+	WITH U AS(
+	   SELECT L.SUB_CD, 
+	           L.LECA_NM, 
+	           L.LEC_CD,
+	           L.PRO_CD,
+	           M.MEM_NM AS lecaCate,
+	           L.LECA_SEM,
+	           L.LECA_YR,
+	           NVL(TO_CHAR(ROUND(SUM(E.EVL_SCORE) / COUNT(E.LEC_CD),2)), '-') AS lecaRoom,
+	           (CASE WHEN L.LECA_CATE = 'L101' THEN '전필'
+	                 WHEN L.LECA_CATE = 'L102' THEN '전선'
+	                 WHEN L.LECA_CATE = 'L103' THEN '교선'
+	                 WHEN L.LECA_CATE = 'L104' THEN '교필' END) AS lecaGubun,
+	           (CASE WHEN L.LECA_CATE IN ('L101', 'L102') THEN (SELECT D.DEP_NM FROM DEPARTMENT D, PROFESSOR P WHERE L.PRO_CD = P.PRO_CD AND P.DEP_CD = D.DEP_CD) 
+	                 WHEN L.LECA_CATE IN ('L103', 'L104') THEN '학과공통' END) AS lecaNote
+	    FROM    LEC_APPLY L, MEMBER M, EVALUATION E
+	    WHERE     L.LECA_YN = 1
+	    AND     L.PRO_CD(+) = M.MEM_CD
+	    AND     E.LEC_CD(+) = L.LEC_CD
+	    GROUP BY L.SUB_CD, L.LECA_NM, L.LEC_CD, L.PRO_CD,
+	           M.MEM_NM, L.LECA_SEM, L.LECA_YR, L.LECA_CATE
+	   )
+	SELECT U.*
+	FROM U
+	WHERE 1 = 1
+	<include refid="uwhere"></include>
+</select>
+
+<!-- 관리자 강의평가 중 미평가 학생들 출력 -->
+<select id="noEvalStucd" parameterType="int" resultType="evaluationVO">
+	SELECT  S.STU_CD
+	FROM    STU_LEC S, EVALUATION E
+	WHERE   S.LEC_CD = E.LEC_CD (+)
+	AND     S.STU_CD = E.STU_CD (+)
+	AND     S.LEC_CD = #{lecCd}
+	AND     E.EVL_SCORE IS NULL
+</select>
+</mapper>

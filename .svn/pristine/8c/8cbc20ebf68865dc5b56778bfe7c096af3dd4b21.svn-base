@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ac.lms.mapper.RegisterMapper">
+	<sql id="where">
+		<if test="year != null and !year.equals('')">
+			AND U.LECA_YR = #{year}
+		</if>
+		<if test="semester != null and !semester.equals('')">
+			AND U.LECA_SEM = #{semester}
+		</if>
+		<if test="department != null and !department.equals('')">
+			AND U.COL_NM || ' ' || U.DEP_NM = #{department}
+		</if>
+		<if test="category != null and !category.equals('')">
+			AND (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = U.LECA_CATE) = #{category}
+		</if>
+		<if test="subject != null and !subject.equals('')">
+			AND (
+				U.SUB_CD LIKE '%' || #{subject} || '%'
+				OR U.LECA_NM LIKE '%' ||  #{subject} || '%'
+			)
+		</if>
+	</sql>
+	
+	<select id="list" parameterType="hashMap" resultType="lecApplyVO">
+		SELECT  CASE WHEN U.STU_CD IS NOT NULL THEN 1 ELSE 2 END LECA_YN,
+		        U.LECA_CD,
+		        U.COL_NM || ' ' || U.DEP_NM LECA_CON,
+		        NVL(U.LECA_TRG, 0) LECA_TRG,
+		        U.SUB_CD,
+		        U.LECA_NM,
+		        NVL(U.LECA_MAX, 0) LECA_MAX,
+		        NVL(U.LEC_HCNT, 0) LECA_UNIT,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = U.LECA_CATE) LECA_CATE,
+		        NVL(U.LECA_CRD, 0) LECA_CRD,
+		        NVL(TRIM(U.MON 
+		             || ' ' || U.TUE 
+		             || ' ' || U.WED 
+		             || ' ' || U.THU 
+		             || ' ' || U.FRI), ' - ') 
+		        || ' (' || NVL(U.BLD_SNM, ' - ') || ' ' || U.ROOM_NO || ')' LECA_TT,
+		        U.MEM_NM PRO_NM,
+		        U.PRO_CD LEC_CD,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = U.LECA_GRADE) LECA_GRADE
+		FROM
+		(   
+		    SELECT LECA_CD, COL_NM, DEP_NM, LECA_TRG, SUB_CD, PRO_CD
+		         , LECA_NM, LECA_MAX, LEC_HCNT, LECA_CATE, LECA_CRD
+		         , MEM_NM, LECA_GRADE, LECA_YN, LECA_YR, LECA_SEM
+		         , BLD_SNM, ROOM_NO, STU_CD
+		         , MAX(MON) MON
+		         , MAX(TUE) TUE
+		         , MAX(WED) WED
+		         , MAX(THU) THU
+		         , MAX(FRI) FRI
+		    FROM VW_REGISTER
+		    GROUP BY LECA_CD, COL_NM, DEP_NM, LECA_TRG, SUB_CD, PRO_CD
+		        , LECA_NM, LECA_MAX, LEC_HCNT, LECA_CATE, LECA_CRD
+		        , MEM_NM, LECA_GRADE, LECA_YN, LECA_YR, LECA_SEM
+		        , BLD_SNM, ROOM_NO, STU_CD
+		) U
+		WHERE   U.LECA_YN = 1
+		AND     U.STU_CD = #{memCd} OR U.STU_CD IS NULL
+		<include refid="where"></include>
+		ORDER BY U.STU_CD, U.LECA_CD
+	</select>
+	<select id="ptlList" parameterType="hashMap" resultType="lecApplyVO">
+		SELECT  A.LECA_NM,
+		        A.LECA_CRD,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = A.LECA_CATE) LECA_CON,
+		        (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = A.PRO_CD) LECA_BOOK
+		FROM    LEC_APPLY A, STU_LEC S
+		WHERE   A.LEC_CD = S.LEC_CD
+		AND     S.STU_CD = #{memCd}
+		AND     A.LECA_YR  || A.LECA_SEM = #{yrNsem}
+		ORDER BY (
+		    CASE WHEN LECA_CON = '전필' THEN 1
+		    WHEN LECA_CON = '전선' THEN 2
+		    WHEN LECA_CON = '교필' THEN 3
+		    ELSE 4
+		    END
+		), A.LECA_CD
+	</select>
+	<insert id="putStuLec" parameterType="hashMap">
+		INSERT INTO STU_LEC (LEC_CD, STU_CD)
+		VALUES (
+			(SELECT LEC_CD FROM LEC_APPLY WHERE LECA_CD = #{lecaCd})
+			, #{memCd}
+		)
+	</insert>
+	<update id="putStuLecCnt" parameterType="int">
+		UPDATE  LECTURE
+		SET     LEC_HCNT = LEC_HCNT + 1
+		WHERE   LEC_CD = (
+		    SELECT  LEC_CD 
+		    FROM    LEC_APPLY
+		    WHERE   LECA_CD = #{lecaCd}
+		)
+	</update>
+	<select id="getRegList" parameterType="hashMap" resultType="lecApplyVO">
+		SELECT  U.COL_NM || ' ' || U.DEP_NM LECA_CON,
+		        NVL(U.LECA_TRG, 0) LECA_TRG,
+		        U.SUB_CD,
+		        U.LECA_NM,
+		        NVL(U.LECA_MAX, 0) LECA_MAX,
+		        NVL(U.LEC_HCNT, 0) LECA_UNIT,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = U.LECA_CATE) LECA_CATE,
+		        NVL(U.LECA_CRD, 0) LECA_CRD,
+		        NVL(TRIM(U.MON 
+		        || ' ' || U.TUE 
+		        || ' ' || U.WED 
+		        || ' ' || U.THU 
+		        || ' ' || U.FRI), ' - ') 
+		        || ' (' || U.BLD_SNM || ' ' || U.ROOM_NO || ')' LECA_TT,
+		        U.MEM_NM PRO_NM,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = U.LECA_GRADE) LECA_GRADE,
+		        U.PRO_CD,
+		        U.LECA_CD,
+		        U.LEC_CD
+		FROM (
+		    SELECT   LECA_CD, LEC_CD, 
+		             STU_CD, MEM_NM, LECA_TRG, SUB_CD, LECA_NM,
+		             LECA_MAX, LECA_CATE, LECA_CRD, LECA_GRADE, PRO_CD,
+		             LECA_YR, LECA_SEM, DEP_NM, COL_NM, LEC_HCNT,
+		             BLD_SNM, ROOM_NO,
+		             MAX(MON) MON, MAX(TUE) TUE, MAX(WED) WED, MAX(THU) THU, MAX(FRI) FRI
+		    FROM     VW_COMPLETE
+		    GROUP BY LECA_CD, LEC_CD, 
+		             STU_CD, MEM_NM, LECA_TRG, SUB_CD, LECA_NM,
+		             LECA_MAX, LECA_CATE, LECA_CRD, LECA_GRADE, PRO_CD,
+		             LECA_YR, LECA_SEM, DEP_NM, COL_NM, LEC_HCNT,
+		             BLD_SNM, ROOM_NO
+		) U
+		WHERE   U.STU_CD = #{memCd}
+		AND     U.LECA_YR = #{year}
+		AND     U.LECA_SEM = #{semester}
+		ORDER BY U.LECA_CD
+	</select>
+	<select id="getCnt" parameterType="hashMap" resultType="hashMap">
+		SELECT  SUM(A.LECA_CRD) SUM,
+		        COUNT(S.LEC_CD) CNT
+		FROM    STU_LEC S, LEC_APPLY A
+		WHERE   S.LEC_CD = A.LEC_CD
+		AND     S.STU_CD = #{memCd}
+		AND     A.LECA_YR = #{year}
+		AND     A.LECA_SEM = #{semester}
+	</select>
+	<delete id="delStuLec" parameterType="hashMap">
+		DELETE	STU_LEC
+		WHERE	STU_CD = #{memCd}
+		AND		LEC_CD = (SELECT LEC_CD FROM LEC_APPLY WHERE LECA_CD = #{lecaCd})
+	</delete>
+	<update id="delStuLecCnt" parameterType="int">
+		UPDATE	LECTURE
+		SET		LEC_HCNT = LEC_HCNT - 1
+		WHERE	LEC_CD = (SELECT LEC_CD FROM LEC_APPLY WHERE LECA_CD = #{lecaCd})
+	</update>
+	<select id="getTime" parameterType="hashMap" resultType="hashMap">
+		SELECT  A.SUB_CD, A.LECA_NM, B.BLD_NM, R.ROOM_NO, 
+		        CASE WHEN T.TM_CD LIKE 'MON%' THEN 1
+		        WHEN T.TM_CD LIKE 'TUE%' THEN 2
+		        WHEN T.TM_CD LIKE 'WED%' THEN 3
+		        WHEN T.TM_CD LIKE 'THU%' THEN 4
+		        ELSE 5
+		        END YOIL,
+		        TO_NUMBER(SUBSTR(T.TM_CD, 4, 2)) GYOSI
+		FROM    STU_LEC S, LEC_APPLY A, TIMETABLE T, BUILDING B, ROOM R
+		WHERE   S.LEC_CD = A.LEC_CD
+		AND     A.LECA_CD = T.LECA_CD
+		AND     A.LECA_ROOM = B.BLD_CD
+		AND     A.LECA_UNIT = R.ROOM_CD
+		AND     A.LECA_YR = #{year}
+		AND     A.LECA_SEM = #{semester}
+		AND     STU_CD = #{memCd}
+		ORDER BY 4, 5
+	</select>
+	<select id="getCurrentTime" parameterType="hashMap" resultType="String">
+		SELECT  T.TM_CD
+		FROM    STU_LEC S, LEC_APPLY A, TIMETABLE T
+		WHERE   S.LEC_CD = A.LEC_CD
+		AND     A.LECA_CD = T.LECA_CD
+		AND     A.LECA_YR = #{year}
+		AND     A.LECA_SEM = #{semester}
+		AND     STU_CD = #{memCd}
+		ORDER BY (
+		    CASE WHEN T.TM_CD LIKE 'MON%' THEN 1
+		    WHEN T.TM_CD LIKE 'TUE%' THEN 2
+		    WHEN T.TM_CD LIKE 'WED%' THEN 3
+		    WHEN T.TM_CD LIKE 'THU%' THEN 4
+		    ELSE 5 END
+		), T.TM_CD
+	</select>
+	<select id="getThisTime" parameterType="int" resultType="String">
+		SELECT  T.TM_CD
+		FROM    TIMETABLE T
+		WHERE   LECA_CD = #{lecaCd}
+		ORDER BY (
+		    CASE WHEN T.TM_CD LIKE 'MON%' THEN 1
+		    WHEN T.TM_CD LIKE 'TUE%' THEN 2
+		    WHEN T.TM_CD LIKE 'WED%' THEN 3
+		    WHEN T.TM_CD LIKE 'THU%' THEN 4
+		    ELSE 5 END
+		), T.TM_CD
+	</select>
+	<select id="updateCntList" parameterType="hashMap" resultType="int">
+		SELECT	NVL(U.LEC_HCNT, 0) LECA_UNIT
+		FROM
+		(   
+		    SELECT LECA_CD, COL_NM, DEP_NM, LECA_TRG, SUB_CD, PRO_CD
+		         , LECA_NM, LECA_MAX, LEC_HCNT, LECA_CATE, LECA_CRD
+		         , MEM_NM, LECA_GRADE, LECA_YN, LECA_YR, LECA_SEM
+		         , BLD_SNM, ROOM_NO, STU_CD
+		         , MAX(MON) MON
+		         , MAX(TUE) TUE
+		         , MAX(WED) WED
+		         , MAX(THU) THU
+		         , MAX(FRI) FRI
+		    FROM VW_REGISTER
+		    GROUP BY LECA_CD, COL_NM, DEP_NM, LECA_TRG, SUB_CD, PRO_CD
+		        , LECA_NM, LECA_MAX, LEC_HCNT, LECA_CATE, LECA_CRD
+		        , MEM_NM, LECA_GRADE, LECA_YN, LECA_YR, LECA_SEM
+		        , BLD_SNM, ROOM_NO, STU_CD
+		) U
+		WHERE   U.LECA_YN = 1
+		AND     U.STU_CD = #{memCd} OR U.STU_CD IS NULL
+		<include refid="where"></include>
+		ORDER BY U.STU_CD, U.LECA_CD
+	</select>
+	<select id="updateCntWishList" parameterType="hashMap" resultType="int">
+		SELECT  NVL(U.LEC_HCNT, 0) LECA_UNIT
+		FROM (
+		    SELECT   LECA_CD, LEC_CD, 
+		             STU_CD, MEM_NM, LECA_TRG, SUB_CD, LECA_NM,
+		             LECA_MAX, LECA_CATE, LECA_CRD, LECA_GRADE, PRO_CD,
+		             LECA_YR, LECA_SEM, DEP_NM, COL_NM, LEC_HCNT,
+		             BLD_SNM, ROOM_NO,
+		             MAX(MON) MON, MAX(TUE) TUE, MAX(WED) WED, MAX(THU) THU, MAX(FRI) FRI
+		    FROM     VW_COMPLETE
+		    GROUP BY LECA_CD, LEC_CD, 
+		             STU_CD, MEM_NM, LECA_TRG, SUB_CD, LECA_NM,
+		             LECA_MAX, LECA_CATE, LECA_CRD, LECA_GRADE, PRO_CD,
+		             LECA_YR, LECA_SEM, DEP_NM, COL_NM, LEC_HCNT,
+		             BLD_SNM, ROOM_NO
+		) U
+		WHERE   U.STU_CD = #{memCd}
+		AND     U.LECA_YR = #{year}
+		AND     U.LECA_SEM = #{semester}
+		ORDER BY U.LECA_CD
+	</select>
+	<select id="updateTimeTable" parameterType="int" resultType="hashMap">
+		SELECT  CASE WHEN T.TM_CD LIKE 'MON%' THEN 1
+		        WHEN T.TM_CD LIKE 'TUE%' THEN 2
+		        WHEN T.TM_CD LIKE 'WED%' THEN 3
+		        WHEN T.TM_CD LIKE 'THU%' THEN 4
+		        ELSE 5
+		        END YOIL,
+		        TO_NUMBER(SUBSTR(T.TM_CD, 4, 2)) GYOSI,
+		        A.SUB_CD
+		FROM    TIMETABLE T, LEC_APPLY A
+		WHERE   T.LECA_CD = A.LECA_CD
+		AND     T.LECA_CD = #{lecaCd}
+		ORDER BY (
+		    CASE WHEN T.TM_CD LIKE 'MON%' THEN 1
+		    WHEN T.TM_CD LIKE 'TUE%' THEN 2
+		    WHEN T.TM_CD LIKE 'WED%' THEN 3
+		    WHEN T.TM_CD LIKE 'THU%' THEN 4
+		    ELSE 5 END
+		), T.TM_CD
+	</select>
+	<select id="getMaxHcnt" parameterType="int" resultType="lecApplyVO">
+		SELECT  A.LECA_MAX, L.LEC_HCNT LECA_UNIT
+		FROM    LEC_APPLY A, LECTURE L
+		WHERE   A.LEC_CD = L.LEC_CD
+		AND     A.LECA_CD = #{lecaCd}
+	</select>
+</mapper>

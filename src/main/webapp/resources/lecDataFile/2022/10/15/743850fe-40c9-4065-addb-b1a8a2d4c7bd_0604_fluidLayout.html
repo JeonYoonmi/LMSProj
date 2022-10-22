@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title>fluid layout</title>
+        <link rel="stylesheet" href="reset.css">
+        <style>
+
+            /* header */
+            #header > h1 {
+                font-size: 1.8em;
+                font-weight: 900;
+                text-shadow: 3px 3px 3px rgba(0, 0, 0, 0.4);
+                padding: 0.8em;
+            }
+            /* nav */
+            #nav {
+                background-color: #666;
+                box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.4);
+                margin-bottom: 5px;
+            }
+
+            #nav > ul:first-child {float: left;}
+            #nav > ul:last-child {float: right;}
+
+            #nav::after {content: ""; display: block; clear: both;}
+
+            #nav > ul > li {float: left;}
+
+            #nav > ul > li > a {
+                text-decoration: none;
+                color: white;
+                display: block;  
+                padding: 1em 2em;
+                text-shadow: 0 0 2px black;            
+            }
+
+            #nav > ul > li > a:hover { background-color: salmon; color: black;}
+
+            /* sidebar */
+
+           #container {overflow: hidden;}
+
+            #sidebar {
+                float: left;
+                width: 200px;
+                padding-top: 0.5em;
+            }
+
+
+            #sidebar > ul > li > a {
+                padding: 0.6em 1em;
+                color: black;
+                text-decoration: none;
+                display: block;
+            }
+
+            #sidebar > ul > li a:hover { background-color: #aaa;}
+
+            /* content*/
+
+            #wrap {
+                float: left;
+                width: 100%;
+                margin-right: -200px;
+            }
+            #content {
+                padding: 0.6em 2em;
+                border-left: 1px solid #ddd;
+                margin-right: 200px;
+            }
+
+
+            #content > h2 {
+                font-size: 1.6em;
+                font-weight: bold;
+                margin-bottom: 1em;
+            }
+
+            #content > p {
+                line-height: 1.5;
+                margin-bottom: 1.5em;
+            }
+
+            /* footer */
+            #footer {
+                background-color:#ddd;
+                padding: 3em;
+                text-align: right;
+                font-size: smaller;
+            }
+
+        </style>
+    </head>
+    <body>
+
+        <div>
+
+            <header id="header">
+                <h1>Fluid Layout</h1>
+            </header>
+
+            <nav id="nav">
+                <ul>
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#html">HTML</a></li>
+                    <li><a href="#css">CSS</a></li>
+                    <li><a href="#javascript">JavaScript</a></li>
+                    <li><a href="#jquery">jQuery</a></li>
+                </ul>
+
+                <ul>
+                    <li><a href="#signin">Sign in</a></li>
+                    <li><a href="#signup">Sign up</a></li>
+                </ul>
+            </nav><!--.#nav-->
+
+            <div id="container">
+                <aside id="sidebar">
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#html">HTML</a></li>
+                        <li><a href="#css">CSS</a></li>
+                        <li><a href="#javascript">JavaScript</a></li>
+                        <li><a href="#jquery">jQuery</a></li>                            
+                    </ul>
+                </aside>
+                
+                <div id="wrap">
+
+                    <article id="content">
+    
+                        <h2>Lorem ipsum</h2>
+    
+                        <p>
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                        Fusce iaculis, risus id rhoncus gravida, justo purus dignissim diam, eu faucibus ipsum augue at dolor.
+                        Ut cursus neque ut quam hendrerit iaculis. Nulla nisi sem, hendrerit et ornare sit amet, laoreet viverra erat.
+                        Duis aliquet eget odio sed posuere. Maecenas rutrum elit id nulla venenatis suscipit.
+                        Suspendisse eget ipsum ut lorem vehicula dapibus.
+                        Vivamus et augue quis ante lobortis accumsan nec quis magna. Donec tempus ultrices luctus.
+                        Fusce at nisi nec orci hendrerit feugiat.
+                        </p>
+    
+                        <p>
+                        Etiam porta felis at malesuada porta. Donec ornare eros nec ultrices tristique.
+                        Ut ut est turpis. Ut a elementum dui. Interdum et malesuada fames ac ante ipsum primis in faucibus.
+                        Aliquam interdum felis et dapibus imperdiet. Donec a eros sapien.
+                        Nam hendrerit posuere gravida. Phasellus eu facilisis tortor. Integer in cursus sapien.
+                        </p>
+    
+                        <p> 
+                        Aliquam tincidunt justo quis risus efficitur finibus.
+                        Aenean faucibus pretium hendrerit. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
+                        Vivamus tristique ligula at sapien euismod imperdiet.
+                        Aenean faucibus dui vel condimentum dapibus. Proin pellentesque pellentesque fringilla.
+                        Nullam semper ut magna id aliquet. Suspendisse ut ullamcorper lectus.
+                        Nam tempus lectus ac tristique faucibus. Pellentesque malesuada neque ut eros laoreet tristique.
+                        Quisque eget tempus erat.
+                        Vestibulum vulputate sagittis mi. Integer tempus ut urna nec viverra.
+                        Morbi commodo sed purus sit amet sollicitudin. Suspendisse convallis, lectus eu ornare ullamcorper, ante erat porta augue, nec pretium ante orci nec sapien.
+                         </p>
+    
+                    </article>
+
+
+                </div> <!--wrap-->
+            </div><!--/#container-->
+
+            <footer id="footer">
+                &copy; 2014-2016 Fluid Layout
+            </footer>
+
+
+        </div><!--/#content-->
+
+
+    </body>
+</html>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.lms.mapper.NotificationMapper">
+	<!-- 읽지 않은 알림 -->
+	<select id="getNotification" parameterType="int" resultType="notificationVO">
+		SELECT NTF_CD, MEM_CD, NTF_CON, NTF_TM, NTF_YN, NTF_URL 
+		FROM NOTIFICATION
+		WHERE NTF_YN = 0
+		AND MEM_CD = #{ memCd }
+		ORDER BY NTF_TM DESC
+	</select>
+	
+	<!-- 알림 읽음 처리 -->
+	<update id="updateNtfYn" parameterType="int">
+		UPDATE NOTIFICATION
+		SET NTF_YN = 1
+		WHERE NTF_CD = #{ ntfCd }
+	</update>
+	
+	<!-- 알림 추가 -->
+	<insert id="insertNtf" parameterType="hashmap">
+		INSERT INTO NOTIFICATION(NTF_CD, MEM_CD, NTF_CON, NTF_TM, NTF_URL)
+		SELECT NTF_SEQ.NEXTVAL AS NTF_CD, T.*, #{ ntfCon }, SYSDATE, #{ ntfUrl }
+		FROM(
+			<foreach collection="memList" item="memCd" separator="UNION ALL">
+				SELECT #{ memCd } AS MEM_CD
+			 	FROM DUAL
+			</foreach>
+		)T
+	</insert>
+</mapper>

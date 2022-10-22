@@ -1,0 +1,98 @@
+@charset "UTF-8";
+	#realFormBody {
+		margin : 5%;
+	}
+	#lecApplyTitle {
+		font-size : 1.5em;
+		font-weight : bold;
+		color : #001353;
+	}
+	#div4btns {
+		float : right;
+	}
+	.lecApplyTable {
+		border-top : 2px solid #001353;
+	}
+	.lecApplyTable th, td {
+		padding : 10px;
+	}
+	.lecApplyTable th{
+		text-align : center;
+		width : 130px;
+		background-color : #f5faff;
+	}
+	.lecApplyTable td{
+		width : 300px;
+	}
+	#autoMaker {
+		border : 1px solid gray;
+		overflow : scroll;
+		width : 297.5px;
+		height : 100px;
+		margin-left : 121px;
+		
+	}
+	.subBlock {
+		padding : 4px;
+	}
+	.subBlock:hover {
+		background-color : lightyellow;
+	}
+	#blockNum1 {
+		width : 900px;
+		height : 550px;
+		margin : 3% auto;
+		padding : 10px 30px;
+	}
+	#blockNum2 {
+		width : 900px;
+		margin : 3% auto;
+		padding : 10px 30px;
+	}
+	#blockNum3 {
+		width : 900px;
+		height : 600px;
+		margin : 3% auto;
+		padding : 10px 30px;
+	}
+	#timeTableChoice {
+		margin : 20px;
+	}
+	#timeTableChoice td, th {
+		width : 50px;
+		height : 40px;
+		text-align : center;
+	}
+	#timeTableChoice td {
+		background-color: white;
+	}
+	#timeTableChoice th {
+		background-color: whitesmoke;
+		color : black;
+	}
+	#timeTableChoice td:hover {
+      background-color : #FFECEF;
+    }
+	#timeTableChoice td.highlighted {
+      background-color : #FFCACA;
+    }
+    #div4transitionBtns {
+    	width : 130px;
+    	margin : 3% auto;
+    }
+    .d-grid {
+    	width : 250px;
+    	margin : 10px auto;
+    }
+    #blockNum3TimeTable, #blockNum3Time {
+    	float : left;
+    }
+    .d-grid #timeTableChoice {
+    	margin : 10px auto;
+    }
+/*     .nav-link.active { */
+/*     	background-color : #001353; */
+/*     } */
+    .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+    	background-color : #001353;
+    }

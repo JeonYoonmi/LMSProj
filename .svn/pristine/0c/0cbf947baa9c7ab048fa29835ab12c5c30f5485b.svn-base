@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.ac.lms.mapper.CounselMapper">
+
+<!-- 포틀릿에서 학생 상담 불러오기 -->
+<select id="portStuCounsel" parameterType="int" resultType="counselVO">
+    SELECT *
+  FROM(SELECT 
+A.CNSL_CD
+, A.STU_CD
+, C.MEM_NM
+, A.CNSL_TTL
+, A.CNSL_CON
+, A.CNSL_REG
+, A.CNSL_DT 
+, A.CNSL_RPL
+, A.CNSL_YN
+, B.COMD_NM AS CNSL_CATE
+FROM COUNSEL A, COMMON_DETAIL B , MEMBER C
+WHERE 
+A.CNSL_CATE = B.COMD_CD 
+AND A.STU_CD = C.MEM_CD
+AND A.STU_CD = #{stuCd}
+ORDER BY A.CNSL_REG DESC)
+WHERE ROWNUM <![CDATA[<=]]>10
+</select>
+
+<!-- 포틀릿에서 교수 상담 불러오기 -->
+<select id="portProCounsel" parameterType="int" resultType="counselVO">
+    SELECT *
+  FROM(SELECT 
+A.CNSL_CD
+, A.STU_CD
+, C.MEM_NM
+, A.CNSL_TTL
+, A.CNSL_CON
+, A.CNSL_REG
+, A.CNSL_DT 
+, A.CNSL_RPL
+, A.CNSL_YN
+, B.COMD_NM AS CNSL_CATE
+FROM COUNSEL A, COMMON_DETAIL B, MEMBER C
+WHERE 
+A.STU_CD = C.MEM_CD 
+AND A.CNSL_CATE = B.COMD_CD 
+AND STU_CD IN(SELECT STU_CD FROM STUDENT WHERE STU_PRO = #{proCd}) 
+ORDER BY CNSL_REG DESC)
+WHERE ROWNUM <![CDATA[<=]]>10
+</select>
+
+<!-- 공통에서 상담카테고리 불러오기 -->
+<select id="cate" resultType="commonDetailVO">
+SELECT * FROM COMMON_DETAIL WHERE COM_CD='C1'
+</select>
+
+<!-- 학생 본인의 전체 행의 수(total)-->
+<select id="getTotal" parameterType="int" resultType="int">
+	SELECT COUNT(*)
+	FROM COUNSEL
+	WHERE 1 = 1
+	AND STU_CD = #{stuCd}
+</select>
+
+
+<!-- 학생 본인의 전체 상담기록 불러오기 -->
+<select id="history" resultType="counselVO" parameterType="hashmap">
+WITH U AS(
+SELECT DENSE_RANK() OVER(ORDER BY T.CNSL_REG ASC) RNUM, DENSE_RANK() OVER(ORDER BY T.CNSL_REG DESC) PRNUM
+, T.*
+FROM(SELECT 
+ A.CNSL_CD
+, A.CNSL_TTL
+, C.MEM_NM
+, A.CNSL_CON
+, A.CNSL_REG
+, A.CNSL_DT
+, A.CNSL_RPL
+, A.CNSL_YN
+, B.COMD_NM AS CNSL_CATE
+FROM COUNSEL A, COMMON_DETAIL B , MEMBER C
+WHERE 
+A.CNSL_CATE = B.COMD_CD 
+AND A.STU_CD = C.MEM_CD
+AND A.STU_CD = #{stuCd}
+ORDER BY A.CNSL_REG ASC
+)T
+)
+SELECT U. *
+FROM U
+WHERE U.PRNUM BETWEEN (#{ currentPage } * 10) - (10 - 1) AND (#{ currentPage } * 10)
+ORDER BY U.RNUM DESC
+</select>
+
+<!-- 상담신청하기 -->
+<insert id="save" parameterType="counselVO">
+INSERT INTO COUNSEL VALUES(
+COUNSEL_SEQ.NEXTVAL
+,#{stuCd}
+,#{cnslTtl}
+,#{cnslCon}
+,SYSDATE
+,NULL
+,NULL
+,'상담전' 
+,#{cnslCate})
+</insert>
+
+<!-- 교수 본인의 전체 행의 수(total)-->
+<select id="getTotalPro" parameterType="int" resultType="int">
+	SELECT COUNT(*)
+	FROM COUNSEL
+	WHERE 1 = 1
+	AND STU_CD IN(SELECT STU_CD FROM STUDENT WHERE STU_PRO = #{proCd})
+</select>
+
+<!-- 교수의 학생 상담 보기 -->
+<select id="proHistory" resultType="counselVO" parameterType="hashmap">
+WITH U AS(
+SELECT DENSE_RANK() OVER(ORDER BY T.CNSL_REG ASC) RNUM, DENSE_RANK() OVER(ORDER BY T.CNSL_REG DESC) PRNUM
+,T.*
+FROM(SELECT 
+A.CNSL_CD
+, A.STU_CD
+, C.MEM_NM
+, A.CNSL_TTL
+, A.CNSL_CON
+, A.CNSL_REG
+, A.CNSL_DT 
+, A.CNSL_RPL
+, A.CNSL_YN
+, B.COMD_NM AS CNSL_CATE
+FROM COUNSEL A, COMMON_DETAIL B, MEMBER C
+WHERE 
+A.STU_CD = C.MEM_CD 
+AND A.CNSL_CATE = B.COMD_CD 
+AND STU_CD IN(SELECT STU_CD FROM STUDENT WHERE STU_PRO = #{proCd}) 
+ORDER BY CNSL_REG ASC
+)T
+)SELECT U.*
+FROM U
+WHERE U.PRNUM BETWEEN (#{ currentPage } * 10) - (10 - 1) AND (#{ currentPage } * 10)
+ORDER BY U.RNUM DESC
+</select>
+
+<!-- 상담 상세내용 -->
+<select id="detail" resultType="counselVO" parameterType="int">
+SELECT 
+A.CNSL_CD
+, A.STU_CD
+, A.CNSL_TTL
+, A.CNSL_CON
+, A.CNSL_REG
+, A.CNSL_DT 
+, A.CNSL_RPL
+, A.CNSL_YN
+, A.CNSL_CATE
+, B.COMD_NM
+, C.MEM_NM
+, (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = (SELECT STU_PRO FROM STUDENT D, COUNSEL E WHERE CNSL_CD = #{cnslCd} AND D.STU_CD = E.STU_CD)) AS PRO_NM
+FROM COUNSEL A, MEMBER C, COMMON_DETAIL B
+WHERE
+A.STU_CD = C.MEM_CD 
+AND A.CNSL_CATE = B.COMD_CD 
+AND A.CNSL_CD = #{cnslCd}
+</select>
+
+<!-- 교수 상담 답장하기 -->
+<update id="reply" parameterType="counselVO">
+UPDATE COUNSEL 
+SET 
+CNSL_RPL = #{cnslRpl} 
+, CNSL_YN = '상담완료'
+, CNSL_DT = SYSDATE 
+WHERE 
+CNSL_CD = #{cnslCd}
+</update>
+
+<!-- 학생 상담 수정 -->
+<update id="modify" parameterType="counselVO">
+UPDATE COUNSEL 
+SET 
+CNSL_CATE = #{cnslCate}
+, CNSL_TTL = #{cnslTtl}
+, CNSL_CON = #{cnslCon}
+, CNSL_REG = SYSDATE 
+WHERE 
+CNSL_CD = #{cnslCd}
+</update>
+
+<!-- 학생 상담 삭제 -->
+<delete id="delete" parameterType="int">
+DELETE FROM COUNSEL WHERE CNSL_CD = #{cnslCd}
+</delete>
+
+	<!-- 메인화면 학생 상담 신창/완료 건수 -->
+	<select id="getCnslCnt" parameterType="int" resultType="counselVO">
+		SELECT	(SELECT COUNT(CNSL_CD) FROM COUNSEL WHERE CNSL_YN = '상담전' AND STU_CD = #{ stuCd }) CNSL_CNTN
+		    ,   (SELECT COUNT(CNSL_CD) FROM COUNSEL WHERE CNSL_YN = '상담완료' AND STU_CD = #{ stuCd }) CNSL_CNTY
+		FROM DUAL
+	</select>
+</mapper>

@@ -1,0 +1,981 @@
+package kr.ac.lms.controller;
+
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import kr.ac.lms.service.ProfessorLectureService;
+import kr.ac.lms.service.StudentLectureService;
+import kr.ac.lms.vo.AttenadenceVO;
+import kr.ac.lms.vo.LecApplyVO;
+import kr.ac.lms.vo.LecDataVO;
+import kr.ac.lms.vo.LecNoticeVO;
+import kr.ac.lms.vo.LecQnaVO;
+import kr.ac.lms.vo.MemberVO;
+import kr.ac.lms.vo.StuLecVO;
+import kr.ac.lms.vo.TaskSubmitVO;
+import kr.ac.lms.vo.TaskVO;
+import kr.ac.lms.vo.TestVO;
+import kr.ac.lms.vo.WeekplanVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/professorLecture")
+@Controller
+public class ProfessorLecController {
+
+	@Autowired
+	ProfessorLectureService professorLectureService;
+	
+	@Autowired
+	StudentLectureService studentLectureService;
+	
+	// 대시보드
+	// , @RequestParam("proCd") int proCd
+	@GetMapping("/list")
+	public String list(HttpServletRequest request, Model model, @RequestParam Map<String, Object> map) {
+		log.info("list 도착");
+		log.info("map >> " + map);
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO) session.getAttribute("memSession");
+		
+		if(map.size() == 0) {
+			map.put("year", "");
+			map.put("sem", "");
+		}
+		
+		int memCd = 0;
+
+		if(memberVO == null) {
+			memCd = 200231111;
+		} else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		map.put("proCd", memCd);
+		log.info("map >> " + map);
+		
+		List<LecApplyVO> lecList = this.professorLectureService.getProLecList(map);
+		
+		log.info("lecApplyVO.toString()" + lecList.toString());
+		
+		
+		model.addAttribute("lecture",lecList);
+		
+		model.addAttribute("map", map);
+		
+		return "deshboard/list";
+	}
+	
+	// 대시보드 년도 ajax
+	@ResponseBody
+	@PostMapping("/getLecaYr")
+	public List<LecApplyVO> getLecaYr(HttpServletRequest request){
+//		int proCd = map.get("proCd");
+//		
+//		log.info("proCd : " + proCd);
+		
+		log.info("getYear : ");
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO) session.getAttribute("memSession");
+
+		int memCd = 0;
+
+		if(memberVO == null) {
+			memCd = 200231111;
+		} else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		List<LecApplyVO> lecYr = this.professorLectureService.getLecaYr(memCd);
+		
+		log.info(" >> " + lecYr);
+		
+		return lecYr;
+	}
+	
+	
+	// 대시보드 학기 ajax
+//	@RequestMapping(value="/getLecaSem", method=RequestMethod.POST, produces = "application/json")
+	@ResponseBody
+	@PostMapping("/getLecaSem")
+	public List<LecApplyVO> getLecaSem(@RequestBody Map<String, Object> map) {
+		log.info("getLecaSem");
+		
+		log.info("map.toString()" + map.toString());
+
+		List<LecApplyVO> lecaSem = this.professorLectureService.getLecaSem(map);
+		
+		log.info("lecaSem.toString() : " + lecaSem.toString());
+		
+		return lecaSem;
+	}
+	
+	// 공지사항 목록
+	@GetMapping("/lecNoticeList")
+	public String lecNoticeList(Model model, @RequestParam int lecCd) {
+		
+		log.info("lecCd>> " + lecCd);
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		List<LecNoticeVO> lecNotList = this.professorLectureService.lecNotList(lecCd);
+		LecApplyVO writer = this.professorLectureService.getLecApply(lecCd);
+		
+		
+		log.info("lecCd>> " + lecCd);
+		
+		model.addAttribute("lecNoticeVO",lecNotList);
+		model.addAttribute("data",lec);
+		model.addAttribute("lec", writer);
+		
+		return "professorLecture/lecNoticeList";
+	}
+	
+	// 공지사항 상세보기
+	@GetMapping("/lecNoticeDetail")
+	public String lecNoticeDetail(int lntcCd, Model model, @ModelAttribute LecNoticeVO lecNoticeVO) {
+		
+		int result = this.professorLectureService.lecNotHit(lntcCd);
+		
+		LecNoticeVO notDet = this.professorLectureService.lecNotDetail(lntcCd);
+		log.info(notDet.toString());
+		model.addAttribute("data",notDet);
+		
+		log.info("조회수 증가 : " + result);
+		
+		return "professorLecture/lecNoticeDetail";
+	}
+	
+	// 공지사항 등록 화면
+	// 교수 세션처리
+	@GetMapping("/lecNoticeInsert")
+	public String lecNoticeInsert(@ModelAttribute LecNoticeVO lecNoticeVO, @RequestParam int lecCd, Model model) {
+		log.info("lecNoticeInsert>>");
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		log.info("lecCd : " + lecCd);
+		
+		model.addAttribute("data",lec);
+		
+		return "professorLecture/lecNoticeInsert";
+		
+	}
+	
+	
+	// 등록 처리
+	@PostMapping("/lecNotWritePost")
+	public String lecNotWritePost(@ModelAttribute LecNoticeVO lecNoticeVO) {
+		
+		int result = this.professorLectureService.lecNotInsert(lecNoticeVO);
+		
+		log.info("result : " + result);
+		
+		return "redirect:/professorLecture/lecNoticeList?lecCd=" + lecNoticeVO.getLecCd();
+	}
+	
+	// 공지사항 수정
+	@PostMapping("/lecNotUpdatePost")
+	public String lecNotUpdatePost(@ModelAttribute LecNoticeVO lecNoticeVO, Model model, RedirectAttributes rat,
+			String lntcTtl, @RequestParam("lntcCon") String lntcCon) {
+		
+		int result = this.professorLectureService.lecNotUpdate(lecNoticeVO);
+		
+		log.info("result : " + result);
+		
+		rat.addFlashAttribute("lntcCd", lecNoticeVO.getLntcCd());
+		
+		log.info("lecNoticeVO.getLntcCd() : " + lecNoticeVO.getLntcCd());
+		
+		
+		return "redirect:/professorLecture/lecNoticeDetail?lntcCd=" + lecNoticeVO.getLntcCd();
+	}
+	
+	// 공지사항 삭제
+	@PostMapping("/lecNotDeletePost")
+	public String lecNotDeletePost(int lntcCd, @ModelAttribute LecNoticeVO lecNoticeVO) {
+		log.info("lecNotDeletePost>>>>>");
+		
+		int result = this.professorLectureService.lecNotDelete(lntcCd);
+		
+		log.info("result : " + result);
+		
+		return "redirect:/professorLecture/lecNoticeList?lecCd=" + lecNoticeVO.getLecCd();
+	}
+	
+	// 수업계획서 조회
+	@GetMapping("/lecApply")
+	public String lecApply(int lecCd, Model model) {
+		
+		log.info("lecApply");
+		
+
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		int lecaCd = lec.getLecaCd();
+		
+		List<WeekplanVO> wee = this.professorLectureService.getWeekPlan(lecaCd);
+		
+		log.info("lec.toString " + lec.toString());
+		
+		model.addAttribute("data", lec);
+		model.addAttribute("week", wee);
+		
+		return "professorLecture/lecApply";
+	}
+	
+	
+	// 퀴즈
+	@GetMapping("/quiz")
+	public String quiz(int lecCd, Model model) {
+		log.info("quiz");
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		List<TestVO> testList = this.professorLectureService.quizBoardList(lecCd);
+		
+		log.info("lecCd : " + lecCd);
+		
+		model.addAttribute("list", testList);
+		model.addAttribute("data", lec);
+		
+		return "professorLecture/quiz";
+	}
+	
+	// 퀴즈 상세
+	@GetMapping("/quizDetail")
+	public String quizDetail(int testCd, Model model, @ModelAttribute TestVO testVO) {
+		log.info("quizDetail");
+		
+		TestVO testQ = this.professorLectureService.quizDetail(testCd);
+		
+		log.info("tesQ : " + testQ);
+		
+		model.addAttribute("data",testQ);
+		
+		return "professorLecture/quizDetail";
+	}
+	
+	// 교수의 퀴즈 생성
+	@PostMapping("/quizInsert")
+	public String quizInsert(Model model, @RequestParam int lecCd, @ModelAttribute TestVO testVO) {
+		log.info("quizInsert");
+		
+		int result = this.professorLectureService.quizInsert(testVO);
+		
+		testVO.setLecCd(lecCd);
+		
+		log.info("result " + result);
+		log.info("testVO.toString : " + testVO.toString());
+		
+		model.addAttribute("data", testVO);
+		
+		return "professorLecture/quizInsert";
+	}
+	
+	// 교수 퀴즈 생성 확인
+	@PostMapping("/quizInsertPost")
+	public String quizInsertPost(@ModelAttribute TestVO testVO) {
+
+		log.info("testVO >> " + testVO.toString());
+		log.info("TestQVOList >> " + testVO.getTestQVOList());
+		log.info("TestCd >> " + testVO.getTestQVOList().get(0).getTestCd());
+		
+		
+		int firstResult = this.professorLectureService.quizInsertUpdate(testVO);
+		log.info("test테이블 update 완료? " + firstResult);
+		log.info("testVO.toString() : " + testVO.toString());
+		log.info("testVO.getTestQVOList() : " + testVO.getTestQVOList());
+		//TestQVO [teqCd=0, testCd=35, teqNo=d, teqOp1=d, teqOp2=d, teqOp3=d, teqOp4=d, teqAnswer=3, rnum=0]
+		
+		//testVO.getTestQVOList() -> 반복돌림
+		//testqVO.setteqCd에다가 시퀀스마지막번호(시퀀스객체.currval) + 1로 세팀
+		
+		int result = this.professorLectureService.quizQInsert(testVO.getTestQVOList());
+		log.info("testQ테이블 insert 완료 ? " + result); 
+		
+		return "redirect:/professorLecture/quiz?lecCd=" + testVO.getLecCd();
+	}
+	
+	// 퀴즈 단순 삭제
+	@PostMapping("/quizDelete")
+	public String quizDelete(int lecCd, int testCd) {
+		log.info("퀴즈 삭제하러옴 " + lecCd + " " + testCd );
+		int result = this.professorLectureService.quizDelete(testCd);
+		
+		log.info("result : " + result);
+		
+		return "redirect:/professorLecture/quiz?lecCd=" + lecCd;
+	}
+	
+	// 자료게시판 
+	@GetMapping("/lecDataList")
+	public String lecDataList(@RequestParam int lecCd, Model model) {
+		log.info("lecDataList 도착");
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		List<LecDataVO> list = this.professorLectureService.lecDataList(lecCd);
+		
+		log.info("getMemNm : " + lec.toString());
+		
+		model.addAttribute("data", lec);
+		model.addAttribute("list", list);
+		
+		return "professorLecture/lecDataList";
+	}
+	
+	// 자료게시판 등록화면
+	@GetMapping("/lecDataInsert")
+	public String lecDataInsert(@RequestParam int lecCd, Model model) {
+		log.info("lecDataInsert 도착");
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		model.addAttribute("data", lec);
+		
+		return "professorLecture/lecDataInsert";
+	}
+	
+	// 자료게시판 등록 post
+	@PostMapping("/lecDataInsertPost")
+	public String lecDataInsertPost(LecDataVO lecDataVO, HttpServletRequest request, MultipartFile mpf) {
+		log.info("lecDataInsertPost 도착");
+		log.info("ldtFnm : " + lecDataVO.getLdtFnm());
+		log.info("mpf[] : " + mpf.getOriginalFilename());
+		ServletContext servletContext = request.getSession().getServletContext();
+		String realPath  = servletContext.getRealPath("/");
+
+		int idx = realPath.indexOf(".metadata");
+	      String filePath = realPath.substring(0, idx);
+	      filePath += "LMSProj\\src\\main\\webapp\\resources\\lecDataFile";
+
+		// 파일 경로
+//		String uploadFolder = "C:\\09.FinalProject\\workspace\\LMSProj\\src\\main\\webapp\\resources\\lecDataFile";
+		//-----------------------------------------------------------------------//
+			File uploadPath = new File(filePath, getFolder());
+			log.info("upload Path : " + uploadPath);
+			
+			if(uploadPath.exists() == false) {
+				uploadPath.mkdirs();
+			}
+		//-----------------------------------------------------------------------//
+		
+		String originalFilename = mpf.getOriginalFilename();
+		
+//		uploadFileName.substring(uploadFileName.lastIndexOf("\\") + 1);
+//		log.info("only file name : " + uploadFileName);
+		
+		UUID uuid = UUID.randomUUID();
+		String uploadFileName = uuid.toString() + "_" + originalFilename;
+		
+		String fileFullPath = uploadPath + File.separator + uploadFileName; // 파일 전체 경로
+		
+//		String dbFilePath = fileFullPath;
+//		
+//		log.info("dbFilePath >> " + dbFilePath);
+		
+		try {
+            //파일 저장
+            mpf.transferTo(new File(fileFullPath)); //파일저장 실제로는 service에서 처리
+            
+            System.out.println("originalFilename => " + originalFilename);
+            System.out.println("uploadFileName => " + uploadFileName);
+            System.out.println("fileFullPath => "+ fileFullPath);
+            
+//            //attach 테이블에 insert -> selectKey 태그를 통해서 max(attach_seq)+1 -> attachVO의 attachCd 멤버변수에 저장됨
+//            attachVO.setAttachNm(getFolder().replace("\\", "/") + "/" + uploadFileName);
+//            attachVO.setAttachPt(dbFilePath);
+//            
+//            int result = this.mailService.attachInsert(attachVO);
+//            log.info("attachCd >> " + attachVO.getAttachCd());
+            
+            	lecDataVO.setLdtFnm(getFolder().replace("\\", "/") + "/" + uploadFileName);
+            
+	            int result = this.professorLectureService.lecDataInsert(lecDataVO);
+	            log.info("result : " + result);
+            
+        } catch (Exception e) {
+            System.out.println("postTempFile_ERROR======> " + fileFullPath);
+            e.printStackTrace();
+        }
+		
+		// insert
+		
+		return "redirect:/professorLecture/lecDataList?lecCd=" + lecDataVO.getLecCd();
+	}
+	
+	// 년/월/일 폴더 생성
+	public static String getFolder() {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		
+		Date date = new Date();
+		
+		String str = sdf.format(date);
+		return str.replace("-", File.separator); 
+	}
+	
+	// 강의 자료실 상세보기
+	@GetMapping("/lecDataDetail")
+	public String lecDataDetail(@RequestParam int ldtCd, Model model) {
+		log.info("lecDataDetail 도착");
+		
+		int result = this.professorLectureService.lecDataHit(ldtCd);
+		
+		log.info("조회수 증가 : " + result);
+
+		LecDataVO lecDataVO = this.professorLectureService.lecDataDetail(ldtCd);
+		LecDataVO preNext = this.professorLectureService.lecDataPreNext(ldtCd);
+
+		int lecCd = lecDataVO.getLecCd();
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		
+		model.addAttribute("data", lecDataVO);
+		model.addAttribute("preNext", preNext);
+		model.addAttribute("lec", lec);
+		
+		return "professorLecture/lecDataDetail";
+	}
+	
+	// 파일 다운로드
+	@GetMapping("/download")
+	public ResponseEntity<Resource> download(String fileName, HttpServletRequest request) {
+		log.info("fileName : " + fileName);
+		
+		ServletContext servletContext = request.getSession().getServletContext();
+		String realPath = servletContext.getRealPath("/");
+		
+		int idx = realPath.indexOf(".metadata");
+		String filePath = realPath.substring(0, idx);
+		filePath += "LMSProj\\src\\main\\webapp\\resources\\lecDataFile\\";
+		
+		Resource resource = new FileSystemResource(filePath + fileName);
+		
+		String resourceName = resource.getFilename();
+		log.info("resourceName : " + resourceName);
+		
+		int separatorIdx = resourceName.indexOf("_");
+		String originalFilename = resourceName.substring(separatorIdx + 1);
+		log.info("originalFilename : " + originalFilename);
+		
+		HttpHeaders headers = new HttpHeaders();
+		try {
+			headers.add("Content-Disposition", "attachment;filename=" + new String(originalFilename.getBytes("UTF-8"), "ISO-8859-1"));
+		} catch (UnsupportedEncodingException e) {
+			log.info(e.getMessage());
+		}
+		
+		return new ResponseEntity<Resource>(resource, headers, HttpStatus.OK);
+	}
+	
+	
+	// 강의 자료실 삭제
+	@PostMapping("/lecDataDelete")
+	public String lecDataDelete(int ldtCd, LecDataVO lecDataVO) {
+		log.info("lecDataDelete 도착");
+		
+		int result = this.professorLectureService.lecDataDelete(ldtCd);
+		
+		log.info("result : " + result);
+		
+		return "redirect:/professorLecture/lecDataList?lecCd=" + lecDataVO.getLecCd();
+	}
+	
+	// 강의 자료실 수정
+	@PostMapping("/lecDataUpdate")
+	public String lecDataUpdate(LecDataVO lecDataVO, HttpServletRequest request, MultipartFile mpf) {
+		log.info("decDataUpdate 도착");
+		
+		log.info("ldtFnm : " + lecDataVO.getLdtFnm());
+		log.info("mpf[] : " + mpf.getOriginalFilename());
+		ServletContext servletContext = request.getSession().getServletContext();
+		String realPath  = servletContext.getRealPath("/");
+
+		int idx = realPath.indexOf(".metadata");
+	    String filePath = realPath.substring(0, idx);
+	    filePath += "LMSProj\\src\\main\\webapp\\resources\\lecDataFile";
+
+		// 파일 경로
+//		String uploadFolder = "C:\\09.FinalProject\\workspace\\LMSProj\\src\\main\\webapp\\resources\\lecDataFile";
+		//-----------------------------------------------------------------------//
+			File uploadPath = new File(filePath, getFolder());
+			log.info("upload Path : " + uploadPath);
+			
+			if(uploadPath.exists() == false) {
+				uploadPath.mkdirs();
+			}
+		//-----------------------------------------------------------------------//
+		
+		String originalFilename = mpf.getOriginalFilename();
+		
+		UUID uuid = UUID.randomUUID();
+		String uploadFileName = uuid.toString() + "_" + originalFilename;
+		
+		String fileFullPath = uploadPath + File.separator + uploadFileName; // 파일 전체 경로
+		
+		try {
+            //파일 저장
+            mpf.transferTo(new File(fileFullPath)); //파일저장 실제로는 service에서 처리
+            
+            System.out.println("originalFilename => " + originalFilename);
+            System.out.println("uploadFileName => " + uploadFileName);
+            System.out.println("fileFullPath => "+ fileFullPath);
+            
+        	lecDataVO.setLdtFnm(getFolder().replace("\\", "/") + "/" + uploadFileName);
+        
+            int result = this.professorLectureService.lecDataUpdate(lecDataVO);
+            log.info("result : " + result);
+        
+        } catch (Exception e) {
+            System.out.println("postTempFile_ERROR======> " + fileFullPath);
+            e.printStackTrace();
+        }
+		
+		return "redirect:/professorLecture/lecDataDetail?ldtCd="  + lecDataVO.getLdtCd();
+	}
+	
+	//과제 및 평가 생성리스트 조회
+	@GetMapping("/lecTaskList")
+	public String lecTaskList(@RequestParam int lecCd, Model model) {
+		log.info("lecTaskList 도착");
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		List<TaskVO> taskVO = this.professorLectureService.lecTaskList(lecCd);
+		
+		model.addAttribute("data", lec);
+		model.addAttribute("list", taskVO);
+		
+		return "professorLecture/lecTaskList";
+	}
+	
+	//과제 및 평가 생성 화면
+	@GetMapping("/lecTaskInsert")
+	public String lecTaskInsert(@RequestParam int lecCd, Model model) {
+		log.info("lecTaskInsert 도착");
+		log.info("lecCd : " + lecCd);
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		model.addAttribute("data", lec);
+		
+		return "professorLecture/lecTaskInsert";
+	}
+	
+	// 과제 및 평가 생성
+	@PostMapping("/lecTaskInsertPost")
+	public String lecTaskInsertPost(TaskVO taskVO, HttpServletRequest request, MultipartFile mpf) {
+		log.info("lecTaskInsertPost 도착");
+		log.info("taskFnm : " + taskVO.getTaskFnm());
+		log.info("mpf[] : " + mpf.getOriginalFilename());
+		ServletContext servletContext = request.getSession().getServletContext();
+		String realPath  = servletContext.getRealPath("/");
+
+		int idx = realPath.indexOf(".metadata");
+	      String filePath = realPath.substring(0, idx);
+	      filePath += "LMSProj\\src\\main\\webapp\\resources\\lecDataFile";
+
+		// 파일 경로
+//		String uploadFolder = "C:\\09.FinalProject\\workspace\\LMSProj\\src\\main\\webapp\\resources\\lecDataFile";
+		//-----------------------------------------------------------------------//
+			File uploadPath = new File(filePath, getFolder());
+			log.info("upload Path : " + uploadPath);
+			
+			if(uploadPath.exists() == false) {
+				uploadPath.mkdirs();
+			}
+		//-----------------------------------------------------------------------//
+		
+		String originalFilename = mpf.getOriginalFilename();
+		
+		UUID uuid = UUID.randomUUID();
+		String uploadFileName = uuid.toString() + "_" + originalFilename;
+		
+		String fileFullPath = uploadPath + File.separator + uploadFileName; // 파일 전체 경로
+		
+		
+		try {
+            //파일 저장
+            mpf.transferTo(new File(fileFullPath)); //파일저장 실제로는 service에서 처리
+            
+            System.out.println("originalFilename => " + originalFilename);
+            System.out.println("uploadFileName => " + uploadFileName);
+            System.out.println("fileFullPath => "+ fileFullPath);
+            
+            	taskVO.setTaskFnm(getFolder().replace("\\", "/") + "/" + uploadFileName);
+            
+	            int result = this.professorLectureService.lecTaskInsert(taskVO);
+	            log.info("result : " + result);
+            
+        } catch (Exception e) {
+            System.out.println("postTempFile_ERROR======> " + fileFullPath);
+            e.printStackTrace();
+        }
+		
+		return "redirect:/professorLecture/lecTaskList?lecCd=" + taskVO.getLecCd();
+	}
+	
+	// 과제 및 평가 상세보기(교수)
+	@GetMapping("/lecTaskDetail")
+	public String lecTaskDetail(@RequestParam int taskCd, Model model) {
+		log.info("lecTaskDetail 도착");
+		log.info("taskCd : " + taskCd);
+		
+		TaskVO taskVO = this.professorLectureService.lecTaskDetail(taskCd);
+		TaskVO preNext = this.professorLectureService.lecTaskPreNext(taskCd);
+		TaskVO taskVOList = this.professorLectureService.lecTaskStuList(taskCd);
+
+		log.info("taskVOList : " + taskVOList);
+		
+		int lecCd = taskVO.getLecCd();
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		model.addAttribute("data", taskVO);
+		model.addAttribute("preNext", preNext);
+		model.addAttribute("lec", lec);
+		model.addAttribute("chk", taskVOList);
+		
+		return "professorLecture/lecTaskDetail";
+	}
+	
+	// 과제 및 평가 삭제(교수)
+	@PostMapping("/lecTaskDelete")
+	public String lecTaskDelete(int taskCd, TaskVO taskVO) {
+		log.info("lecTaskDelete 도착");
+		
+		int result = this.professorLectureService.lecTaskDelete(taskCd);
+		
+		log.info("result : " + result);
+		
+		return "redirect:/professorLecture/lecTaskList?lecCd=" + taskVO.getLecCd() ;
+	}
+	
+	// 과제 및 평가  수정(교수)
+	@PostMapping("/lecTaskUpdate")
+	public String lecQnaUpdate(TaskVO taskVO, HttpServletRequest request, MultipartFile mpf) {
+		log.info("lecTaskUpdate 도착");
+		log.info("taskCd : " + taskVO.getTaskCd());
+		
+		log.info("taskFnm : " + taskVO.getTaskFnm());
+		log.info("mpf[] : " + mpf.getOriginalFilename());
+		ServletContext servletContext = request.getSession().getServletContext();
+		String realPath  = servletContext.getRealPath("/");
+
+		int idx = realPath.indexOf(".metadata");
+	      String filePath = realPath.substring(0, idx);
+	      filePath += "LMSProj\\src\\main\\webapp\\resources\\lecDataFile";
+
+		// 파일 경로
+//		String uploadFolder = "C:\\09.FinalProject\\workspace\\LMSProj\\src\\main\\webapp\\resources\\lecDataFile";
+		//-----------------------------------------------------------------------//
+			File uploadPath = new File(filePath, getFolder());
+			log.info("upload Path : " + uploadPath);
+			
+			if(uploadPath.exists() == false) {
+				uploadPath.mkdirs();
+			}
+		//-----------------------------------------------------------------------//
+		
+		String originalFilename = mpf.getOriginalFilename();
+		
+		UUID uuid = UUID.randomUUID();
+		String uploadFileName = uuid.toString() + "_" + originalFilename;
+		
+		String fileFullPath = uploadPath + File.separator + uploadFileName; // 파일 전체 경로
+		
+		
+		try {
+            //파일 저장
+            mpf.transferTo(new File(fileFullPath)); //파일저장 실제로는 service에서 처리
+            
+            System.out.println("originalFilename => " + originalFilename);
+            System.out.println("uploadFileName => " + uploadFileName);
+            System.out.println("fileFullPath => "+ fileFullPath);
+            
+            	taskVO.setTaskFnm(getFolder().replace("\\", "/") + "/" + uploadFileName);
+            
+            	int result = this.professorLectureService.lecTaskUpdate(taskVO);
+	            log.info("result : " + result);
+            
+        } catch (Exception e) {
+            System.out.println("postTempFile_ERROR======> " + fileFullPath);
+            e.printStackTrace();
+        }
+		
+		
+		return "redirect:/professorLecture/lecTaskDetail?taskCd=" + taskVO.getTaskCd();
+	}
+	
+	// 제출현황 리스트 조회
+	@GetMapping("/lecTaskStuList")
+	public String lecTaskStuList(int taskCd, int lecCd, Model model) {
+		log.info("lecTaskStuList 도착");
+		
+		TaskVO taskVOList = this.professorLectureService.lecTaskStuList(taskCd);
+		log.info("taskVOList : " + taskVOList);
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		model.addAttribute("list", taskVOList);
+		model.addAttribute("data", lec);
+		
+		return "professorLecture/lecTaskStuList";
+	}
+	
+	// 학생 제출 상세 조회
+	@GetMapping("/lecTaskStuDetail")
+	public String lecTaskStuDetail(int tsubCd, int taskCd, Model model) {
+		log.info("lecTaskStuDetail 도착");
+		
+		TaskVO taskVO = this.professorLectureService.lecTaskDetail(taskCd);
+		TaskVO preNext = this.professorLectureService.lecTaskPreNext(taskCd);
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		
+		map.put("tsubCd", tsubCd);
+		map.put("taskCd", taskCd);
+		
+		TaskSubmitVO taskSubmitVO = this.professorLectureService.stuLecTaskDetail(map);
+		
+		model.addAttribute("data", taskVO);
+		model.addAttribute("preNext", preNext);
+		model.addAttribute("taskSubmit", taskSubmitVO);
+		
+		return "professorLecture/lecTaskStuDetail";
+	}
+	
+	// 학생 제출 점수 부여
+	@PostMapping("/stuLecTaskScoreUpdate")
+	public String stuLecTaskScoreUpdate(TaskSubmitVO taskSubmitVO) {
+		log.info("stuLecTaskScoreUpdate 도착");
+		
+		int result = this.professorLectureService.stuLecTaskScoreUpdate(taskSubmitVO);
+		
+		log.info("result : " + result);
+		
+		return "redirect:/professorLecture/lecTaskStuList?taskCd=" + taskSubmitVO.getTaskCd() + "&&lecCd=" + taskSubmitVO.getLecCd();
+	}
+	
+	// 출결 조회(학생/출결)
+	@GetMapping("/lecAttendanceList")
+	public String lecAttendanceList(int lecCd, Model model) {
+		log.info("lecAttendanceList 도착");
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		model.addAttribute("data", lec);
+		
+		return "professorLecture/lecAttendanceList";
+	}
+	
+	// 출결 > 학생 목록 출력 tui
+	@ResponseBody
+	@PostMapping("/lecAttendanceStuList")
+	public List<MemberVO> lecAttendanceStuList(@RequestParam int lecCd) {
+		log.info("lecAttendanceStuList 도착");
+		
+		List<MemberVO> memberVOList = this.professorLectureService.attendanceStuInform(lecCd);
+		
+		return memberVOList;
+	}
+	
+	// 출결 > 학생 정보 상세 조회 ajax
+	@ResponseBody
+	@PostMapping("/lecAttendanceStuDetail")
+	public Map<String, Object> lecAttendanceStuDetail(int memCd, int lecCd) {
+		log.info("lecAttendanceStuDetail 도착");
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		
+		map.put("memCd", memCd);
+		map.put("lecCd", lecCd);
+		map.put("stuCd", memCd);
+		
+		MemberVO memberVO = this.professorLectureService.attendanceStuDetail(map);
+		AttenadenceVO attendenceVO = this.professorLectureService.attendanceCnt(map);
+		List<AttenadenceVO> attenDetail = this.professorLectureService.attendStuDetail(map);
+		
+		Map<String, Object> totalMap = new HashMap<String, Object>();
+		
+		totalMap.put("memberVO", memberVO);
+		totalMap.put("attendenceVO", attendenceVO);
+		totalMap.put("attenDetail", attenDetail);
+		
+		return totalMap;
+	}
+	
+	// 출결 > 학생 출결 등록 ajax
+	@ResponseBody
+	@PostMapping("/attendStuInsert")
+	public int attendStuInsert(AttenadenceVO attenadenceVO) {
+		log.info("attendStuInsert 도착");
+		
+		int result = this.professorLectureService.attendStuInsert(attenadenceVO);
+		
+		log.info("result : " + result);
+		
+		return result;
+	}
+	
+	// 출결 > 학생 출결 insert 확인 cnt
+	@ResponseBody
+	@PostMapping("/attenChkCnt")
+	public int attenChkCnt(int lecCd, int stuCd, int atenWk, int atenHr) {
+		log.info("attenChkCnt 도착");
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		
+		map.put("lecCd", lecCd);
+		map.put("stuCd", stuCd);
+		map.put("atenWk", atenWk);
+		map.put("atenHr", atenHr);
+		
+		int result = this.professorLectureService.attenChkCnt(map);
+		
+		return result;
+	}
+	
+	// 출결 > 학생 출결 update
+	@ResponseBody
+	@PostMapping("/attendStuUpdate")
+	public int attendStuUpdate(AttenadenceVO attenadenceVO) {
+		log.info("attendStuUpdate 도착");
+		log.info("attenadenceVO : " + attenadenceVO);
+		
+		int result = this.professorLectureService.attendStuUpdate(attenadenceVO);
+		
+		return result;
+	}
+	
+	// 수강생 목록(학생/교수)
+	@GetMapping("/lecAllStuList")
+	public String lecAllStuList(int lecCd, Model model) {
+		log.info("lecAllStuList 도착");
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		model.addAttribute("data", lec);
+		
+		
+		return "professorLecture/lecAllStuList";
+	}
+	
+	// (교수)성적 관리
+	@GetMapping("/lecTotalScore")
+	public String lecTotalScore(int lecCd, Model model) {
+		log.info("lecTotalScore 도착");
+		
+		LecApplyVO lec = this.professorLectureService.getLecApply(lecCd);
+		
+		model.addAttribute("data", lec);
+		
+		return "professorLecture/lecTotalScore";
+	}
+	
+	// 학생 성적 전체 리스트
+	@ResponseBody
+	@PostMapping("/lecStuTotScore")
+	public List<MemberVO> lecStuTotScore (int lecCd, int lecaCd) {
+		log.info("lecStuTotScore ajax 도착");
+		
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		
+		map.put("lecCd", lecCd);
+		map.put("lecaCd", lecaCd);
+		
+		List<MemberVO> list = this.professorLectureService.getTotalScoreList(map);
+		
+		log.info("list : " + list);
+		
+		return list;
+	}
+	
+	// 학생 성적 상세 리스트
+	@ResponseBody
+	@PostMapping("/lecStuScoreDetail")
+	public List<MemberVO> lecStuScoreDetail(int lecCd, int memCd) {
+		log.info("lecStuScoreDetail ajax 도착");
+		
+		log.info("lecCd : " + lecCd + " memCd : " + memCd);
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		
+		map.put("lecCd", lecCd);
+		map.put("stuCd", memCd);
+		
+		List<MemberVO> list = this.professorLectureService.getTotalScoreDetail(map);
+		
+		return list;
+	}
+	
+	// 학생 점수 및 총 점
+	@ResponseBody
+	@PostMapping("/stuScoreandMaxScore")	
+	public MemberVO stuScoreandMaxScore(int lecCd, int memCd) {
+		log.info("stuScoreandMaxScore ajax 도착");
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		
+		map.put("lecCd", lecCd);
+		map.put("stuCd", memCd);
+		
+		MemberVO vo = this.professorLectureService.getStuScoreAndMaxScore(map);
+		
+		return vo;
+	}
+	
+	// 성적 부여
+	@ResponseBody
+	@PostMapping("/stuGradeUpdate")
+	public int stuGradeUpdate(StuLecVO stuLecVO) {
+		log.info("stuGradeUpdate ajax 도착");
+		
+		int result = this.professorLectureService.stuGradeUpdate(stuLecVO);
+		
+		return result;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+}

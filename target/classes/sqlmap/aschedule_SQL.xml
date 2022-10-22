@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 
+	namespace : xml파일은 여러개일 수 있음.
+	이를 구별하기 위한 식별 용도로 사용
+-->
+<mapper namespace="kr.ac.lms.mapper.AScheduleMapper">
+
+	<!-- 포틀릿용 학사일정 조회 -->
+	<select id="portAsche" parameterType="String" resultType="aScheduleVO">
+	SELECT 
+	CASE WHEN TO_CHAR(ASCH_ST, 'MM-DD') = TO_CHAR(TO_DATE(ASCH_EN, 'YY-MM-DD')-1,'MM-DD') 
+	THEN TO_CHAR(ASCH_ST, 'MM.DD') 
+	ELSE TO_CHAR(ASCH_ST, 'MM.DD') || '~' || TO_CHAR(TO_DATE(ASCH_EN, 'YY-MM-DD')-1,'MM.DD') END AS ASCH_ST
+	, ASCH_CON
+	FROM A_SCHEDULE
+	WHERE TO_CHAR(SYSDATE,'YY-MM') = TO_CHAR(ASCH_ST,'YY-MM')
+	AND (ASCH_CATE = #{aschCate} OR ASCH_CATE = 'S104')
+	</select>
+
+	<!-- 학사일정 조회 -->
+	<select id="allSchedule" resultType="aScheduleVO">
+		SELECT * FROM A_SCHEDULE
+	</select>
+	
+	<!-- 가장 큰 번호 조회 -->
+	<select id="findMax" resultType="int">
+	SELECT MAX(ASCH_CD)+1 FROM A_SCHEDULE
+	</select>
+	
+	<!-- 학사일정 등록 -->
+	<insert id="insert" parameterType="aScheduleVO">
+		INSERT INTO A_SCHEDULE(
+		ASCH_CD
+		,ASCH_MEM
+		,ASCH_CATE
+		,ASCH_CON
+		,ASCH_ST,ASCH_EN)
+		VALUES(
+		(SELECT MAX(ASCH_CD)+1 FROM A_SCHEDULE)
+		,#{aschMem}
+		,#{aschCate}
+		,#{aschCon} 
+		,TO_DATE(#{aschSt},'YYYY-MM-DD')
+		,TO_DATE(#{aschEn},'YYYY-MM-DD')
+		)
+	</insert>
+	
+	<!-- 학사일정 삭제 -->
+	<delete id="delete" parameterType="aScheduleVO">
+		DELETE FROM A_SCHEDULE WHERE ASCH_CD = #{aschCd}
+	</delete>
+	
+	<!-- 학사일정 수정 -->
+	<update id="modify" parameterType="aScheduleVO">
+		UPDATE A_SCHEDULE 
+		SET 
+		ASCH_ST = TO_DATE(#{aschSt},'YYYY-MM-DD')
+		,ASCH_EN =TO_DATE(#{aschEn},'YYYY-MM-DD')
+		WHERE ASCH_CD = #{aschCd}
+	</update>
+</mapper>

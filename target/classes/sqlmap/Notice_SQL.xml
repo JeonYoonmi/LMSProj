@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.lms.mapper.NoticeMapper">
+
+	<resultMap type="noticeVO" id="noticeMap">
+		<result property="rnum" column="RNUM" />
+		<result property="ntcCd" column="NTC_CD" />
+		<result property="mgrCd" column="MRG_CD" />
+		<result property="ntcHot" column="NTC_HOT" />
+		<result property="ntcHit" column="NTC_HIT" />
+		<result property="ntcDt" column="NTC_DT" />
+		<result property="ntcCate" column="NTC_CATE" />
+		<result property="ntcCon" column="NTC_CON" />
+		<result property="ntcTtl" column="NTC_TTL" />
+		<result property="mgrNm" column="MGR_NM" />
+		
+		<collection property="ntcFileVOList" resultMap="ntcFileMap"></collection>
+	</resultMap>
+	
+	<resultMap type="noticeFileVO" id="ntcFileMap">
+		<result property="ntcfCd" column="NTCF_CD" />
+		<result property="ntcfNm" column="NTCF_NM" />
+		<result property="ntcfPt" column="NTCF_PT" />
+		
+		<association property="attachVO" resultMap="attachMap"></association>
+	</resultMap>
+	
+	<resultMap type="attachVO" id="attachMap">
+		<result property="attachCd" column="ATTACH_CD" />
+		<result property="attachNm" column="ATTACH_NM" />
+		<result property="attachPt" column="ATTACH_PT" />
+	</resultMap>
+
+	<sql id="where">
+		<if test="ntcCate != null and !ntcCate.equals('')">
+			AND N.NTC_CATE = #{ ntcCate }
+		</if>
+		<if test="cond != null and !cond.equals('')">
+			<choose>
+				<when test="cond == 'title'">
+					AND N.NTC_TTL LIKE '%' ||  #{ keyword } || '%'
+				</when>
+				<when test="cond == 'content'">
+					AND N.NTC_CON LIKE '%' ||  #{ keyword } || '%'
+				</when>
+				<when test="cond == 'ttlNcon'">
+					AND (N.NTC_TTL LIKE '%' ||  #{ keyword } || '%' OR N.NTC_CON LIKE '%' ||  #{ keyword } || '%')
+				</when>
+				<when test="cond == 'writer'">
+					AND N.MGR_CD IN (SELECT MEM_CD FROM MEMBER WHERE MEM_NM = #{ keyword })
+				</when>
+			</choose>
+		</if>
+	</sql>
+
+	<!-- 공지사항 목록 출력 -->
+	<select id="ntcList" parameterType="hashMap" resultMap="noticeMap">
+		WITH U AS (
+					SELECT DENSE_RANK() OVER(ORDER BY T.NTC_CD ASC) RNUM, DENSE_RANK() OVER(ORDER BY T.NTC_CD DESC) PRNUM, T.*
+					FROM(
+					    SELECT N.NTC_CD, 
+					    		(SELECT MEM_NM FROM MEMBER WHERE MEM_CD = N.MGR_CD) MGR_NM, 
+					    		N.NTC_TTL, 
+					    		(SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = N.NTC_CATE) NTC_CATE, 
+					    		N.NTC_DT, N.NTC_HIT, N.NTC_HOT, F.NTCF_CD
+					    FROM NOTICE N LEFT OUTER JOIN NOTICE_FILE F ON(N.NTC_CD = F.NTC_CD)
+					    WHERE NTC_HOT = 0
+						<include refid="where"></include>
+					)T
+				)
+		SELECT U.*
+		FROM U
+		WHERE U.PRNUM BETWEEN (#{ currentPage } * #{ show }) - (#{ show } - 1) AND (#{ currentPage } * #{ show })
+		ORDER BY U.RNUM DESC
+	</select>
+	
+	<!-- 고정 공지사항 목록 출력 -->
+	<select id="ntcHotList" resultMap="noticeMap">
+		SELECT N.NTC_CD, (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = N.MGR_CD) MGR_NM, N.NTC_TTL, (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = N.NTC_CATE) NTC_CATE, N.NTC_DT, N.NTC_HIT, N.NTC_HOT,
+		        F.NTCF_CD
+		FROM NOTICE N LEFT OUTER JOIN NOTICE_FILE F ON(N.NTC_CD = F.NTC_CD)
+		WHERE NTC_HOT = 1
+		ORDER BY N.NTC_DT DESC
+	</select>
+	
+	<!--  전체 행의 수(total) -->
+	<select id="getTotal" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM NOTICE N
+		WHERE NTC_HOT = 0
+		<include refid="where"></include>
+	</select>
+	
+	<!-- 공지사항 상세정보 -->
+	<select id="ntcDetail" parameterType="int" resultMap="noticeMap">
+		SELECT N.NTC_CD, 
+				(SELECT MEM_NM FROM MEMBER WHERE MEM_CD = N.MGR_CD) MGR_NM, 
+				N.NTC_TTL, N.NTC_CON, 
+				(SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = N.NTC_CATE) NTC_CATE,
+				N.NTC_DT, N.NTC_HIT, N.NTC_HOT, F.NTCF_CD, F.NTC_CD, A.ATTACH_CD, A.ATTACH_NM, A.ATTACH_PT
+		FROM NOTICE N LEFT OUTER JOIN NOTICE_FILE F ON(N.NTC_CD = F.NTC_CD)
+                		LEFT OUTER JOIN ATTACH A ON (F.ATTACH_CD = A.ATTACH_CD)
+		WHERE N.NTC_CD = #{ ntcCd }
+	</select>
+	
+	<!-- 조회수 증가 -->
+	<update id="updateHit" parameterType="int">
+		UPDATE NOTICE
+		SET NTC_HIT = NTC_HIT + 1
+		WHERE NTC_CD = #{ ntcCd }
+	</update>
+	
+	<!-- 공지사항 작성 -->
+	<insert id="ntcWrite" parameterType="noticeVO">
+		<selectKey resultType="int" keyProperty="ntcCd" order="AFTER">
+			SELECT NOTICE_SEQ.CURRVAL FROM DUAL
+		</selectKey>
+		INSERT INTO NOTICE(NTC_CD, MGR_CD, NTC_TTL, NTC_CON, NTC_CATE, NTC_DT, NTC_HOT)
+		VALUES(NOTICE_SEQ.NEXTVAL, #{ mgrCd }, #{ ntcTtl }, #{ ntcCon }, #{ ntcCate }, SYSDATE, #{ ntcHot })
+	</insert>
+	
+	<!-- 공지사항 파일 저장 -->
+	<insert id="ntcFileWrite" parameterType="hashmap">
+		INSERT INTO NOTICE_FILE(NTCF_CD, NTC_CD, ATTACH_CD)
+		SELECT NTCF_SEQ.NEXTVAL AS NTCF_CD, #{ ntcCd } AS NTC_CD
+		 , T.* 
+		FROM(
+			<foreach collection="ntcFileVOList" item="noticeFileVO" separator="UNION ALL">
+				SELECT #{ noticeFileVO.attachCd } AS ATTACH_CD
+			 	FROM DUAL
+			</foreach>
+		)T
+	</insert>
+	
+	<!-- 공지사항 수정 -->
+	<update id="updateNtc" parameterType="noticeVO">
+		UPDATE NOTICE
+		SET NTC_TTL = #{ ntcTtl }, NTC_CON = #{ ntcCon }, NTC_CATE = #{ ntcCate }, NTC_HOT = ${ ntcHot }, MGR_CD = ${ mgrCd }
+		WHERE NTC_CD = #{ ntcCd }
+	</update>
+	
+	<!-- 공지사항 삭제 -->
+	<delete id="deleteNtc" parameterType="int">
+		DELETE FROM NOTICE
+		WHERE NTC_CD = #{ ntcCd }
+	</delete>
+	
+	<!-- 공지사항 첨부파일 삭제 -->
+	<delete id="deleteNtcFile" parameterType="int">
+		DELETE FROM NOTICE_FILE
+		WHERE NTC_CD = #{ ntcCd }
+	</delete>
+	
+	<!-- 포틀릿을 위한 공지사항 -->
+	<select id="portletNtc" resultType="noticeVO">
+		<![CDATA[
+			WITH U AS (
+			            SELECT DENSE_RANK() OVER(ORDER BY T.NTC_CD DESC) RNUM, T.*
+			            FROM(
+			                SELECT N.NTC_CD, 
+			                        (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = N.MGR_CD) MGR_NM, 
+			                        N.NTC_TTL, 
+			                        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = N.NTC_CATE) NTC_CATE, 
+			                        N.NTC_DT, N.NTC_HIT, N.NTC_HOT
+			                FROM NOTICE N
+			            )T
+			        )
+			SELECT U.*
+			FROM U 
+			WHERE U.RNUM <= 8
+		]]> 
+	</select>
+	
+	<sql id="mainNtcWhere">
+		<choose>
+			<when test="data == 'hot'">
+				AND N.NTC_HOT = 1
+			</when>
+			<when test="data == 'N101'">
+				AND N.NTC_CATE = 'N101'
+			</when>
+			<when test="data == 'N102'">
+				AND N.NTC_CATE = 'N102'
+			</when>
+			<when test="data == 'N103'">
+				AND N.NTC_CATE = 'N103'
+			</when>
+		</choose>
+	</sql>
+	
+	<!-- 메인메뉴 상단 공지사항 출력 -->
+	<select id="mainNtcList" parameterType="String" resultType="noticeVO">
+			WITH U AS (
+			            SELECT DENSE_RANK() OVER(ORDER BY T.NTC_CD DESC) RNUM, T.*
+			            FROM(
+			                SELECT N.NTC_CD, 
+			                        (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = N.MGR_CD) MGR_NM, 
+			                        N.NTC_TTL, 
+			                        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = N.NTC_CATE) NTC_CATE, 
+			                        N.NTC_DT, N.NTC_HIT, N.NTC_HOT
+			                FROM NOTICE N
+			                <where>
+			                	<include refid="mainNtcWhere"></include>
+			                </where>
+			            )T
+			        )
+			SELECT U.*
+			FROM U 
+		<![CDATA[
+			WHERE U.RNUM <= 4
+		]]>
+	</select>
+</mapper>
