@@ -1,0 +1,124 @@
+@charset "UTF-8";
+
+.card{
+	background : white;
+	width : 84%;
+	margin-left : auto;
+	margin-right : auto;
+}
+.searchNtc {
+		height: 100px;
+		padding: 32px;
+		background: #f8f8f8;
+		position: relative;
+		text-align : center;
+}
+select[name=cond],input[name=keyword],#searchBtn{
+	display : inline-block;
+	margin-right : 10px;
+}
+select[name=cond]{
+	width : 100px;
+}
+#searchKey{
+	display : inline-block;
+	position : relative;
+	top : 2px;
+	width : 40%;
+}
+input[name=keyword]{
+	width : 100%;
+}
+#searchBtn{
+	margin-left : 10px;
+}
+#ansWaitRound{
+	display : inline-block;
+	position : relative;
+	top : 10px;
+	left : 20px;
+}
+table{
+	text-align : center;
+	margin-top : 30px;
+}
+table td:nth-child(2){
+	text-align : left;
+}
+#lockImg{
+	width : 20px;
+}
+
+.allRound{
+	margin-left : auto;
+	margin-right : auto;
+	width : 100%;
+	height : 100%;
+}
+.pageInfo{
+	width : 100%;
+	height : 91px;
+	border : 1px solid #c0c0c0;
+	background : lightyellow;
+	border-radius : 5px;
+	font-weight : bold;
+}
+.pageInfo p{
+		color : green;
+		margin-top : 12px;
+		margin-left : 10px;
+}
+#questionForm
+{
+	background : white;
+	padding : 20px;
+	border-radius : 18px;
+	margin-top : 20px;
+}
+.titleRound{
+	width : 100%;
+}
+#qnatitle{
+	display : inline-block;
+	font-size : 13pt;
+	width : 100px;
+	text-align : left;
+	color : #001353;
+	margin-left : 40px;
+}
+#qnaTitle{
+	width : 85%;
+}
+
+.inputText{
+	width : 82%;
+	height : 40px;
+}
+.textArea{
+	margin-top : 30px;
+	width : 93%;
+	margin-left : 35px;
+}
+#showRound{
+	display : inline-block;
+	margin-left : 50px;
+	margin-top : 20px;
+}
+#isShow{
+	margin-left : 15px;
+}
+#cancelBtn{
+	margin-left: 10px;
+}
+
+#questionInsert{
+	float : right;
+	background : #2a5388;
+	box-shadow : #2a5388;
+	border-color : #2a5388;
+}
+#questionInsert:hover{
+	background : #4671af;
+	box-shadow : #4671af;
+	border-color : #4671af;
+}

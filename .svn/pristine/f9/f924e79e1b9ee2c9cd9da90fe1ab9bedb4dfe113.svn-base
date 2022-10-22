@@ -1,0 +1,184 @@
+
+*{
+  margin:0px;
+  padding:0px;
+}
+ul,li{
+  list-style:none;
+}
+a{
+  color:inherit;
+  text-decoration:none;
+}
+#allRound{
+   width : 90%;
+   height : 100%;
+   margin-left : auto;
+   margin-right : auto;
+}
+#subtitle{
+   background : #001353;
+   color : #fff;
+   display : inline-block;
+   width : 50%;
+   text-align : center;
+   padding : 15px;
+   border-radius : 10px 10px 0px 0px;
+   cursor : pointer;
+}
+#subtitle2{
+   display : inline-block;
+   background : #fff;
+   float : right;
+   width : 50%;
+   text-align : center;
+   padding : 15px;
+   border-radius : 10px 10px 0px 0px;
+   cursor : pointer;
+}
+#myPage{
+   padding : 18px;
+   border-radius : 10px;
+   border: 2px solid #001353;
+}
+#image_container{
+   width : 115px;
+   height : 145px;
+   border: 1px solid #777;
+   border-radius : 10px;
+   margin-left : 2%;
+}
+#uploadForm{
+   display : inline-block;
+   position : relative;
+   left : 130px;
+   bottom : 40px;
+   margin-left : 2%;
+}
+#profile{
+   display : inline-block;
+   width : 100%;
+   height : 100%;
+   border-radius : 10px;
+}
+.profileImg{
+   width : 115px;
+   height : 145px;
+   position :relative;
+   bottom : 145px;
+   border-radius : 10px;
+}
+#saveProfile{
+   background : #2a5388;
+   box-shadow : #2a5388;
+   border : #2a5388;
+   position : relative;
+   bottom : 4px;
+   left : 3px;
+}
+#saveProfile:hover{
+   background : #4371af;
+   box-shadow : #4371af;
+   border : #4371af;
+}
+#updateInfo label{
+   display : inline-block;
+   width : 100px;
+   font-size : 12pt;
+   padding-left : 15px;
+}
+#updateInfo input{
+   text-align : center;
+   width : 170px;
+}
+#memBank{
+   width : 170px;
+   text-align : center;
+}
+#memBank, #updateInfo input{
+   margin-bottom : 10px;
+   border:none;
+   border-bottom : 1px solid #777;
+   background : #f9f9f9;
+   padding-top : 8px;
+   padding-bottom : 6px;
+   border-radius : 7px;
+}
+#updateInfo{
+   padding-left : 20px;
+}
+#updateInfo label{
+   margin : 5px;
+}
+
+#updateInfo label,#updateInfo input, #memBank{
+   margin-top : 10px;
+   margin-left : 2%;
+}
+#updateInfo input,#memBank{
+   margin-right : 5%;
+}
+#changePw{
+   display : none;
+}
+#tgradeYellowBox {
+    background: lightyellow;
+    border: 1px solid lightgray;
+    margin: 10px;
+    padding: 10px;
+}
+#tgradeGreenText {
+    color: green;
+}
+#changePw input[type=password]{
+   width : 90%;
+   height : 45px;
+   margin-top :7px;
+   border-radius : 5px;
+   border:1px solid #aaa;
+   padding : 5px;
+}
+#changePw{
+   border : 2px solid #001353;
+   width : 100%;
+   margin-left : auto;
+   margin-right : auto;
+   padding : 18px;
+   border-radius : 10px;
+   height : 381px;
+}
+#changePw img{
+	width : 250px;
+	float : right;
+	position : relative;
+	right : 200px;
+	bottom : 115px;
+}
+#inputRound{
+   display : inline-block;
+   float : left;
+   margin-left : 18%;
+   width :24%;
+   text-align : center;
+}
+#changePwBtn{
+   width : 120px;
+   height : 150px;
+   position : relative;
+   right : 550px;
+   bottom : 15px;
+   background:#2a5388;
+   box-shadow:#2a5388;
+   border:#2a5388;
+}
+
+#changePwBtn:hover{
+   background:#4671af;
+   box-shadow:#4671af;
+   border:#4671af;
+}
+
+#changePwBtn{
+   margin-top : 20px;
+   margin-left : 450px;
+}

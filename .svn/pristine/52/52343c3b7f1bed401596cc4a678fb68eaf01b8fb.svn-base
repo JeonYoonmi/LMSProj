@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC 
+"-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" 
+"http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+<!-- tiles 설정 -->
+<tiles-definitions>
+	<!-- empty : 아무것도 안 붙인거 -->
+   <definition name="empty" template="/WEB-INF/views/tiles/empty.jsp">
+      <put-attribute name="body" value="" />
+   </definition>
+   
+   <definition name="login/loginForm" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/login/loginForm.jsp" />
+   </definition>
+   
+   <definition name="frame/*" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/frame/{1}.jsp" />
+   </definition>
+   
+   <definition name="login/findID" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/login/findID.jsp" />
+   </definition>
+   
+   <definition name="approval/proApprovalPdf" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/approval/proApprovalPdf.jsp" />
+   </definition>   
+   
+   <definition name="approval/lecaRoomAssign" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/approval/lecaRoomAssign.jsp" />
+   </definition>  
+   
+   <definition name="record/joleopDetail" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/record/joleopDetail.jsp" />
+   </definition>  
+   
+   <definition name="record/gradeTable" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/record/gradeTable.jsp" />
+   </definition> 
+   
+   <definition name="main/popupPortlet" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/main/popupPortlet.jsp" />
+   </definition> 
+   
+   <definition name="lecApply/preListPdf" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/lecApply/preListPdf.jsp" />
+   </definition> 
+   
+   <definition name="lecApply/showPreListPdf" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/lecApply/showPreListPdf.jsp" />
+   </definition> 
+   
+   <definition name="payment/certificate" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/payment/certificate.jsp" />
+   </definition> 
+   
+   <definition name="payment/bill" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/payment/bill.jsp" />
+   </definition>
+   
+   <definition name="login/sample" extends="empty">
+      <put-attribute name="body" value="/WEB-INF/views/login/sample.jsp" />
+   </definition>
+   
+   <!-- mail : 메일 화면 -->
+   <definition name="mail" template="/WEB-INF/views/tiles/mailMain.jsp">
+      <put-attribute name="aside" value="/WEB-INF/views/tiles/mailAside.jsp" />
+      <put-attribute name="body" value="" />
+   </definition>
+   
+   <definition name="mail/*" extends="mail">
+      <put-attribute name="body" value="/WEB-INF/views/mail/{1}.jsp" />
+   </definition>
+   
+   <!-- main : 메인 화면 등 aside 없는 부분-->
+   <definition name="main" template="/WEB-INF/views/tiles/main.jsp">
+		<put-attribute name="topbar" value="/WEB-INF/views/tiles/topbarMain.jsp" />
+		<put-attribute name="stuTopnav" value="/WEB-INF/views/tiles/StuTopnav.jsp" />
+		<put-attribute name="proTopnav" value="/WEB-INF/views/tiles/ProTopnav.jsp" />
+		<put-attribute name="mgrTopnav" value="/WEB-INF/views/tiles/MgrTopnav.jsp" />
+		<put-attribute name="body" value="" />
+   </definition>
+   
+   <definition name="main/*" extends="main">
+      <put-attribute name="body" value="/WEB-INF/views/main/{1}.jsp" />
+   </definition>   
+   
+   <!-- mainA : 포틀릿 설정 없는 topbar, aside 없는 부분-->
+   <definition name="mainA" template="/WEB-INF/views/tiles/main.jsp">
+		<put-attribute name="topbar" value="/WEB-INF/views/tiles/topbar.jsp" />
+		<put-attribute name="stuTopnav" value="/WEB-INF/views/tiles/StuTopnav.jsp" />
+		<put-attribute name="proTopnav" value="/WEB-INF/views/tiles/ProTopnav.jsp" />
+		<put-attribute name="mgrTopnav" value="/WEB-INF/views/tiles/MgrTopnav.jsp" />
+		<put-attribute name="body" value="" />
+   </definition>
+   
+   <definition name="deshboard/*" extends="mainA">
+      <put-attribute name="body" value="/WEB-INF/views/deshboard/{1}.jsp" />
+   </definition>   
+   
+   <definition name="qna/*" extends="mainA">
+      <put-attribute name="body" value="/WEB-INF/views/qna/{1}.jsp" />
+   </definition>   
+   
+   <definition name="notice/*" extends="mainA">
+      <put-attribute name="body" value="/WEB-INF/views/notice/{1}.jsp" />
+   </definition>   
+   
+   <!-- Ui : 통합 정보 시스템 -->
+	<definition name="Ui" template="/WEB-INF/views/tiles/UIindex.jsp">
+		<put-attribute name="topbar" value="/WEB-INF/views/tiles/topbar.jsp" />
+		<put-attribute name="stuTopnav" value="/WEB-INF/views/tiles/StuTopnav.jsp" />
+		<put-attribute name="proTopnav" value="/WEB-INF/views/tiles/ProTopnav.jsp" />
+		<put-attribute name="mgrTopnav" value="/WEB-INF/views/tiles/MgrTopnav.jsp" />
+		<put-attribute name="stuAside" value="/WEB-INF/views/tiles/StuAside.jsp" />
+		<put-attribute name="proAside" value="/WEB-INF/views/tiles/ProAside.jsp" />
+		<put-attribute name="mgrAside" value="/WEB-INF/views/tiles/MgrAside.jsp" />
+		<put-attribute name="body" value="" />
+	</definition>
+	
+   <definition name="record/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/record/{1}.jsp" />
+   </definition>
+   
+   <definition name="payment/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/payment/{1}.jsp" />
+   </definition>
+   
+   <definition name="counsel/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/counsel/{1}.jsp" />
+   </definition>
+   
+   <definition name="course/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/course/{1}.jsp" />
+   </definition>
+   
+   <definition name="info/UI" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/info/UI.jsp" />
+   </definition>
+   
+   <definition name="approval/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/approval/{1}.jsp" />
+   </definition>
+   
+   <definition name="popup/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/popup/{1}.jsp" />
+   </definition>
+   
+   <definition name="myPage/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/myPage/{1}.jsp" />
+   </definition>
+   
+   <definition name="management/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/management/{1}.jsp" />
+   </definition>
+   
+   <definition name="tgrade/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/tgrade/{1}.jsp" />
+   </definition>
+   
+   <definition name="lecApply/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/lecApply/{1}.jsp" />
+   </definition>
+
+   <definition name="evaluation/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/evaluation/{1}.jsp" />
+   </definition>
+   
+   <definition name="scholarship/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/scholarship/{1}.jsp" />
+   </definition>
+   
+   <definition name="payment/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/payment/{1}.jsp" />
+   </definition>
+   
+   <definition name="aschedule/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/aschedule/{1}.jsp" />
+   </definition>
+   
+   <definition name="facility/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/facility/{1}.jsp" />
+   </definition>
+   
+   <definition name="schedule/*" extends="Ui">
+      <put-attribute name="body" value="/WEB-INF/views/schedule/{1}.jsp" />
+   </definition>
+   
+   <!-- LecD : 강의실 상세 -->
+    <definition name="LecD" template="/WEB-INF/views/tiles/lecDIndex.jsp">
+		<put-attribute name="topbar" value="/WEB-INF/views/tiles/topbar.jsp" />
+		<put-attribute name="stuTopnav" value="/WEB-INF/views/tiles/StuTopnav.jsp" />
+		<put-attribute name="proTopnav" value="/WEB-INF/views/tiles/ProTopnav.jsp" /> 
+		<put-attribute name="aside" value="/WEB-INF/views/tiles/lecDAside.jsp" />
+		<put-attribute name="body" value="" />
+	</definition>
+
+   <definition name="professorLecture/*" extends="LecD">
+      <put-attribute name="body" value="/WEB-INF/views/professorLecture/{1}.jsp" />
+   </definition>
+   
+   <definition name="studentLecture/*" extends="LecD">
+      <put-attribute name="body" value="/WEB-INF/views/studentLecture/{1}.jsp" />
+   </definition>
+   
+   <!-- register : 수강 신청 -->
+	<definition name="register" template="/WEB-INF/views/tiles/registerMain.jsp">
+		<put-attribute name="topbar" value="/WEB-INF/views/tiles/topbar.jsp" />
+		<put-attribute name="topnav" value="/WEB-INF/views/tiles/StuTopnav.jsp" />
+		<put-attribute name="aside" value="/WEB-INF/views/tiles/registerAside.jsp" />
+		<put-attribute name="body" value="" />
+	</definition>
+   
+   <definition name="register/*" extends="register">
+      <put-attribute name="body" value="/WEB-INF/views/register/{1}.jsp" />
+   </definition>
+   
+   <definition name="pregister/*" extends="register">
+      <put-attribute name="body" value="/WEB-INF/views/pregister/{1}.jsp" />
+   </definition>
+   
+   <definition name="info/register" extends="register">
+      <put-attribute name="body" value="/WEB-INF/views/info/register.jsp" />
+   </definition>
+   
+	
+<!--    <definition name="test/test" extends="Ui"> -->
+<!--       <put-attribute name="body" value="/WEB-INF/views/test/test.jsp" /> -->
+<!--    </definition> -->
+</tiles-definitions>

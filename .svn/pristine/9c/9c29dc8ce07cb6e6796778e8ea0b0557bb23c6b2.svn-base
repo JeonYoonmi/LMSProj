@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.ac.lms.mapper.CourseHandbookMapper">
+	<sql id="where">
+		<if test="year != null and !year.equals('')">
+			AND U.LECA_YR = #{year}
+		</if>
+		<if test="semester != null and !semester.equals('')">
+			AND U.LECA_SEM = #{semester}
+		</if>
+		<if test="department != null and !department.equals('')">
+			AND U.COL_NM || ' ' || U.DEP_NM = #{department}
+		</if>
+		<if test="category != null and !category.equals('')">
+			AND (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = U.LECA_CATE) = #{category}
+		</if>
+		<if test="subject != null and !subject.equals('')">
+			AND (
+				U.SUB_CD LIKE '%' || #{subject} || '%'
+				OR U.LECA_NM LIKE '%' ||  #{subject} || '%'
+			)
+		</if>
+	</sql>
+
+	<select id="list" parameterType="hashMap" resultType="lecApplyVO">
+		SELECT  U.LECA_CD,
+				U.COL_NM || ' ' || U.DEP_NM LECA_CON,
+		        NVL(U.LECA_TRG, 0) LECA_TRG,
+		        U.SUB_CD,
+		        U.LECA_NM,
+		        NVL(U.LECA_MAX, 0) LECA_MAX,
+		        NVL(U.LEC_HCNT, 0) LECA_UNIT,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = U.LECA_CATE) LECA_CATE,
+		        NVL(U.LECA_CRD, 0) LECA_CRD,
+		        NVL(TRIM(U.MON 
+		             || ' ' || U.TUE 
+		             || ' ' || U.WED 
+		             || ' ' || U.THU 
+		             || ' ' || U.FRI), ' - ') 
+		        || ' (' || U.BLD_SNM || ' ' || U.ROOM_NO || ')' LECA_TT,
+		        U.MEM_NM PRO_NM,
+		        U.PRO_CD LEC_CD,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = U.LECA_GRADE) LECA_GRADE
+		FROM
+		(   
+		    SELECT LECA_CD, COL_NM, DEP_NM, LECA_TRG, SUB_CD, PRO_CD
+		         , LECA_NM, LECA_MAX, LEC_HCNT, LECA_CATE, LECA_CRD
+		         , MEM_NM, LECA_GRADE, LECA_YN, LECA_YR, LECA_SEM
+		         , BLD_SNM, ROOM_NO
+		         , MAX(MON) MON
+		         , MAX(TUE) TUE
+		         , MAX(WED) WED
+		         , MAX(THU) THU
+		         , MAX(FRI) FRI
+		    FROM VW_SUGANG
+		    GROUP BY LECA_CD, COL_NM, DEP_NM, LECA_TRG, SUB_CD, PRO_CD
+		        , LECA_NM, LECA_MAX, LEC_HCNT, LECA_CATE, LECA_CRD
+		        , MEM_NM, LECA_GRADE, LECA_YN, LECA_YR, LECA_SEM
+		        , BLD_SNM, ROOM_NO
+		) U
+		WHERE U.LECA_YN = 1
+		<include refid="where"></include>
+		
+	</select>
+	
+	<select id="department" resultType="String">
+		SELECT DISTINCT C.COL_NM || ' ' || D.DEP_NM DATA
+		FROM COLLEGE C, DEPARTMENT D
+		WHERE C.COL_CD = D.COL_CD
+		ORDER BY (CASE WHEN DATA = '대학 학과공통' THEN 1 ELSE 2 END), DATA
+	</select>
+	
+	<select id="getYr" resultType="String">
+		SELECT  DISTINCT LECA_YR
+		FROM    LEC_APPLY
+		ORDER   BY 1 DESC
+	</select>
+	
+	<select id="getPreYr" resultType="hashMap">
+		SELECT  CASE WHEN TO_CHAR(SYSDATE, 'MM') IN ('08', '09', '10', '11', '12', '01')
+		            THEN TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY'))
+		            ELSE TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY')) - 1
+		        END YEAR    
+		        , CASE WHEN TO_CHAR(SYSDATE, 'MM') IN ('08', '09', '10', '11', '12', '01') THEN 1 ELSE 2 END SEMESTER
+		FROM DUAL
+	</select>
+	
+	<select id="getThisYr" resultType="hashMap">
+		SELECT  TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY')) YEAR,
+		        TO_NUMBER(CASE WHEN TO_CHAR(SYSDATE, 'MM') IN ('08', '09', '10', '11', '12', '01') THEN 2 ELSE 1 END) SEMESTER
+		FROM DUAL
+	</select>
+</mapper>

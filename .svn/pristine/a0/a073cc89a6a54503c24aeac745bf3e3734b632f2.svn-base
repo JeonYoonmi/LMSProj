@@ -1,0 +1,420 @@
+package kr.ac.lms.controller;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.ac.lms.service.LectureApplyService;
+import kr.ac.lms.vo.CriteriaVO;
+import kr.ac.lms.vo.LecApplyVO;
+import kr.ac.lms.vo.MemberVO;
+import kr.ac.lms.vo.SubjectVO;
+import kr.ac.lms.vo.WeekplanVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/lecApply")
+@Controller
+public class LectureApplyController {
+
+	@Autowired
+	LectureApplyService lectureApplyService;
+	
+	//강의계획서 조회 페이지
+	@GetMapping("/list")
+	public String list() {
+		
+		return "lecApply/list";
+	}
+	
+	//강의계획서 신청 페이지
+	@GetMapping("/preList")
+	public String preList() {
+		
+		return "lecApply/preList";
+	}
+	
+	//교수 개인정보 가져오기
+	@ResponseBody
+	@PostMapping("/getInfo")
+	public MemberVO getInfo(HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 201100036;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		MemberVO getMember = this.lectureApplyService.getInfo(memCd);
+		
+		return getMember;
+	}
+	
+	//신규강의계획서 버튼 클릭 시 보여지는 폼 페이지
+	@GetMapping("/preListPdf")
+	public String preListPdf(HttpServletRequest request, Model model) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 201100036;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		MemberVO professor = this.lectureApplyService.lecApplyInfo(memCd);
+		model.addAttribute("professor", professor);
+		
+		return "lecApply/preListPdf";
+	}
+	
+	//제출한 강의계획서 리스트 불러오기
+	@ResponseBody
+	@PostMapping("/getList")
+	public List<LecApplyVO> getList(HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 201100036;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("memCd", memCd);
+		
+		List<LecApplyVO> list = this.lectureApplyService.list(map);
+		
+		return list;
+	}
+	
+	//년도 및 학기 불러오기
+	@ResponseBody
+	@PostMapping("/getYrNSem")
+	public List<LecApplyVO> getYrNSem(HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 201100036;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		List<LecApplyVO> list = this.lectureApplyService.getYrNSem(memCd);
+//		if(list != null) {
+//			log.info(list.get(0).toString());
+//		}
+		
+		return list;
+	}
+	
+	//on change로 강의계획서 다시 불러오기
+	@ResponseBody
+	@PostMapping("/getListAgain")
+	public List<LecApplyVO> getListAgain(
+			HttpServletRequest request,
+			@RequestBody Map<String, Object> yrNsem) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 201100036;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("memCd", memCd);
+		map.put("yrNsem", yrNsem.get("yrNsem"));
+		
+		List<LecApplyVO> list = this.lectureApplyService.list(map);
+		
+		return list;
+	}
+	
+	//제출한 강의계획서 개수 가져오기
+	@ResponseBody
+	@PostMapping("/getCnt")
+	public int getCnt(
+			HttpServletRequest request,
+			@RequestBody Map<String, Object> yrNsem) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 201100036;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("memCd", memCd);
+		map.put("yrNsem", yrNsem.get("yrNsem"));
+		
+//		log.info("getCnt map : " + map);
+		
+		int result = this.lectureApplyService.getCnt(map);
+		
+//		log.info("getCnt result : " + result);
+		
+		return result;
+	}
+	
+	//과목 리스트 불러오기
+	@ResponseBody
+	@PostMapping("/getSubList")
+	public List<SubjectVO> getSubList() {
+		
+		List<SubjectVO> list = this.lectureApplyService.subList();
+		
+		return list;
+	}
+	
+	//임시저장
+	@ResponseBody
+	@PostMapping("/temporarySubmit")
+	public int temporarySubmit(
+			HttpServletRequest request,
+			@RequestBody Map<String, Object> map) {
+		
+		//log.info("임시저장 map : " + map);
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 201100036;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		//1. lec_apply 테이블에 값 넣기
+		map.put("proCd", memCd);
+		int lecApplyResult = this.lectureApplyService.tempSubmit(map);
+		int lecaCd = this.lectureApplyService.getMaxLecaCd();
+		
+		//2. criteria 테이블에 값 넣기 (leca_cd, 비율 5개)
+		map.put("lecaCd", lecaCd);
+		int criteriaResult = this.lectureApplyService.criteriaSubmit(map);
+		//log.info("criteria 결과 : " + criteriaResult);
+		
+		//3. weekplan 테이블에 값 넣기 (wp_no, leca_cd, wp_con);
+		Map<String, Object> weekMap = new HashMap<String, Object>();
+		weekMap.put("lecaCd", lecaCd);
+		
+		for(int i = 1; i <= 15; i++) {
+			weekMap.put("wpNo", i);
+			weekMap.put("wpCon", map.get("weekPlan" + i));
+			
+			this.lectureApplyService.weekPlanSubmit(weekMap);
+		}
+		
+		int weekPlanResult = this.lectureApplyService.weekPlanCount(lecaCd);
+		//log.info("weekplan 결과 : " + weekPlanResult);
+		
+		return lecApplyResult;
+	}
+	
+	@ResponseBody
+	@PostMapping("/getTempList")
+	public List<LecApplyVO> getTempList(HttpServletRequest request) {
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 201100036;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		List<LecApplyVO> list = this.lectureApplyService.tempList(memCd);
+		
+//		if(list != null) {
+//			log.info(list.get(0).toString());
+//		}
+		
+		return list;
+	}
+	
+	@GetMapping("/getPreListPdf/{lecaCd}")
+	public String getPreListPdf(
+			HttpServletRequest request,
+			Model model,
+			@PathVariable int lecaCd) {
+		
+		//log.info("선택된 임시저장 강의계획서 : " + lecaCd);
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 201100036;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		MemberVO professor = this.lectureApplyService.lecApplyInfo(memCd);
+		LecApplyVO lecture = this.lectureApplyService.getTempLecApplyVO(lecaCd);
+		CriteriaVO criteria = this.lectureApplyService.getTempCriteriaVO(lecaCd);
+		List<WeekplanVO> weekPlanList = this.lectureApplyService.getTempWeekPlanVO(lecaCd);
+		
+		model.addAttribute("professor", professor);
+		model.addAttribute("lecture", lecture);
+		model.addAttribute("criteria", criteria);
+		model.addAttribute("weekPlanList", weekPlanList);
+		
+		//String lecaTt = lecture.getLecaTt();
+		
+		return "lecApply/showPreListPdf";
+	}
+	
+	//임시저장의 임시저장
+	@ResponseBody
+	@PostMapping("/temporaryUpdate")
+	public int temporaryUpdate(@RequestBody Map<String, Object> map) {
+		
+		//log.info("임시저장 map : " + map);
+		
+		//1. lec_apply 테이블에 값 넣기
+		int lecApplyResult = this.lectureApplyService.tempUpdate(map);
+		//log.info("lecApply update : " + lecApplyResult);
+		
+		//2. criteria 테이블에 값 넣기 (leca_cd, 비율 5개)
+		int criteriaResult = this.lectureApplyService.criteriaUpdate(map);
+		//log.info("criteria 결과 : " + criteriaResult);
+		
+		//3. weekplan 테이블에 값 넣기 (wp_no, leca_cd, wp_con);
+		Map<String, Object> weekMap = new HashMap<String, Object>();
+		weekMap.put("lecaCd", map.get("lecaCd"));
+		int weekPlanResult = 0;
+		
+		for(int i = 1; i <= 15; i++) {
+			weekMap.put("wpNo", i);
+			weekMap.put("wpCon", map.get("weekPlan" + i));
+			
+			this.lectureApplyService.weekPlanUpdate(weekMap);
+			weekPlanResult ++;
+		}
+		//log.info("weekplan 결과 : " + weekPlanResult);
+		
+		return lecApplyResult + criteriaResult + weekPlanResult;
+	}
+	
+	//임시저장된 강의계획서 삭제하기
+	@ResponseBody
+	@PostMapping("/temporaryDelete")
+	public int temporaryDelete(@RequestBody Map<String, Object> map) {
+		
+		int lecaCd = Integer.parseInt(String.valueOf(map.get("lecaCd")));
+		
+		return this.lectureApplyService.deleteLecApply(lecaCd);
+	}
+	
+	//강의계획서 작성 후 제출하기
+	@ResponseBody
+	@PostMapping("/lecApplySubmit")
+	public int lecApplySubmit(
+			HttpServletRequest request,
+			@RequestBody Map<String, Object> map) {
+		
+		//log.info("임시저장 map : " + map);
+		
+		HttpSession session = request.getSession();
+		MemberVO memberVO = (MemberVO)session.getAttribute("memSession");
+		int memCd = 0;
+		
+		if(memberVO == null) {
+			memCd = 201100036;
+		}else {
+			memCd = memberVO.getMemCd();
+		}
+		
+		//1. lec_apply 테이블에 값 넣기
+		map.put("proCd", memCd);
+		int lecApplyResult = this.lectureApplyService.lecApplySubmit(map);
+		int lecaCd = this.lectureApplyService.getMaxLecaCd();
+		
+		//2. criteria 테이블에 값 넣기 (leca_cd, 비율 5개)
+		map.put("lecaCd", lecaCd);
+		int criteriaResult = this.lectureApplyService.criteriaSubmit(map);
+		
+		//3. weekplan 테이블에 값 넣기 (wp_no, leca_cd, wp_con);
+		Map<String, Object> weekMap = new HashMap<String, Object>();
+		weekMap.put("lecaCd", lecaCd);
+		
+		for(int i = 1; i <= 15; i++) {
+			weekMap.put("wpNo", i);
+			weekMap.put("wpCon", map.get("weekPlan" + i));
+			
+			this.lectureApplyService.weekPlanSubmit(weekMap);
+		}
+		
+		int weekPlanResult = this.lectureApplyService.weekPlanCount(lecaCd);
+		
+		return lecApplyResult + criteriaResult + weekPlanResult;
+	}
+	
+	//임시저장의 임시저장
+	@ResponseBody
+	@PostMapping("/tempLecApplySubmit")
+	public int tempLecApplySubmit(@RequestBody Map<String, Object> map) {
+		
+		//log.info("임시저장 map : " + map);
+		
+		//1. lec_apply 테이블에 값 넣기
+		int lecApplyResult = this.lectureApplyService.tempUpdateSubmit(map);
+		
+		//2. criteria 테이블에 값 넣기 (leca_cd, 비율 5개)
+		int criteriaResult = this.lectureApplyService.criteriaUpdate(map);
+		
+		//3. weekplan 테이블에 값 넣기 (wp_no, leca_cd, wp_con);
+		Map<String, Object> weekMap = new HashMap<String, Object>();
+		weekMap.put("lecaCd", map.get("lecaCd"));
+		int weekPlanResult = 0;
+		
+		for(int i = 1; i <= 15; i++) {
+			weekMap.put("wpNo", i);
+			weekMap.put("wpCon", map.get("weekPlan" + i));
+			
+			this.lectureApplyService.weekPlanUpdate(weekMap);
+			weekPlanResult ++;
+		}
+		//log.info("weekplan 결과 : " + weekPlanResult);
+		
+		return lecApplyResult + criteriaResult + weekPlanResult;
+	}
+}

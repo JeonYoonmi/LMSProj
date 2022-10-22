@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 
+	namespace : xml파일은 여러개일 수 있음.
+	이를 구별하기 위한 식별 용도로 사용
+-->
+<mapper namespace="kr.ac.lms.mapper.MailMapper">
+	<resultMap type="mailVO" id="mailMap">
+		<result property="mlCd" column="ML_CD" />
+		<result property="mlRcp" column="ML_RCP" />
+		<result property="mlRcpnm" column="ML_RCPNM" />
+		<result property="mlRcpml" column="ML_RCPML" />
+		<result property="mlSen" column="ML_SEN" />
+		<result property="mlSennm" column="ML_SENNM" />
+		<result property="mlSenml" column="ML_SENML" />
+		<result property="mlTtl" column="ML_TTL" />
+		<result property="mlCon" column="ML_CON" />
+		<result property="mlImsi" column="ML_IMSI" />
+		<result property="mlTm" column="ML_TM" />
+		<result property="mlYn" column="ML_YN" />
+		<result property="mlYndt" column="ML_YNDT" />
+		<result property="senRcp" column="SEN_RCP" />
+		<result property="memNm" column="MEM_NM" />
+		<collection property="mailFileVOList" resultMap="mailFileMap"></collection>
+	</resultMap>
+	
+	<resultMap type="mailFileVO" id="mailFileMap">
+		<result property="mlfCd" column="MLF_CD" />
+		<collection property="attachVO" resultMap="attachMap"></collection>
+	</resultMap>
+	
+	<resultMap type="attachVO" id="attachMap">
+		<result property="attachCd" column="ATTACH_CD" />
+		<result property="attachNm" column="ATTACH_NM" />
+		<result property="attachPt" column="ATTACH_PT" />
+	</resultMap>
+	
+	<sql id="where">
+		<if test="keyword != null and !keyword.equals('')">
+			AND M.ML_TTL like '%' || #{ keyword } || '%'
+		</if>
+		<choose>
+			<when test="cate.equals('all')">
+				AND (ML_SEN = #{ memCd } OR ML_RCP = #{ memCd })
+	            AND ML_IMSI IS NULL
+			</when>
+			<when test="cate.equals('sent')">
+				AND ML_SEN = #{ mlSen }
+				AND ML_IMSI IS NULL
+			</when>
+			<when test="cate.equals('inbox')">
+				AND ML_RCP = #{ mlRcp }
+			</when>
+			<when test="cate.equals('imsi')">
+				AND ML_SEN = #{ mlSen }
+                AND ML_IMSI IS NOT NULL
+			</when>
+		</choose>
+	</sql>
+	
+	<!-- 전체 메일 불러오기 -->
+	<select id="mailAll" parameterType="hashMap" resultMap="mailMap">
+		WITH U AS(
+		            SELECT DENSE_RANK() OVER(ORDER BY T.ML_CD DESC) RNUM, T.*
+		            FROM(
+		                    SELECT M.ML_CD,
+		                    (
+		                        CASE M.ML_RCP WHEN #{ memCd } THEN 0
+		                        ELSE 1
+		                        END
+		                    ) SEN_RCP,
+		                    (
+		                        CASE M.ML_RCP WHEN #{ memCd } THEN (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = M.ML_SEN)
+		                        ELSE (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = M.ML_RCP)
+		                        END
+		                    ) MEM_NM,
+		                    M.ML_RCP,
+		                    (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = M.ML_RCP) ML_RCPNM,
+		                    (SELECT MEM_ML FROM MEMBER WHERE MEM_CD = M.ML_RCP) ML_RCPML,
+		                    M.ML_SEN,
+		                    (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = M.ML_SEN) ML_SENNM,
+		                    (SELECT MEM_ML FROM MEMBER WHERE MEM_CD = M.ML_SEN) ML_SENML,
+		                    M.ML_TTL, M.ML_CON, M.ML_IMSI, M.ML_TM, M.ML_YN, M.ML_YNDT, F.MLF_CD
+		                FROM MAIL M LEFT OUTER JOIN MAIL_FILE F ON(M.ML_CD = F.ML_CD)
+		                WHERE 1 = 1
+				        <include refid="where"></include>
+		            )T
+		        )
+		        SELECT U.*
+		        FROM U
+		        WHERE U.RNUM BETWEEN (#{ currentPage } * #{ show }) - (#{ show } - 1) AND (#{ currentPage } * #{ show })
+		        ORDER BY U.ML_TM DESC
+	</select>
+	
+	<!-- 보낸 메일 불러오기 -->
+	<select id="getSentMail" parameterType="hashMap" resultMap="mailMap">
+		WITH U AS(
+		            SELECT DENSE_RANK() OVER(ORDER BY T.ML_CD DESC) RNUM, T.*
+		            FROM(
+		                    SELECT M.ML_CD,
+		                        M.ML_RCP,
+		                        (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = M.ML_RCP) ML_RCPNM,
+		                        (SELECT MEM_ML FROM MEMBER WHERE MEM_CD = M.ML_RCP) ML_RCPML,
+		                        M.ML_SEN,
+		                        (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = M.ML_SEN) ML_SENNM,
+		                        (SELECT MEM_ML FROM MEMBER WHERE MEM_CD = M.ML_SEN) ML_SENML,
+		                        M.ML_TTL, M.ML_CON, M.ML_IMSI, M.ML_TM, M.ML_YN, M.ML_YNDT, F.MLF_CD, F.ATTACH_CD
+		                    FROM MAIL M LEFT OUTER JOIN MAIL_FILE F ON(M.ML_CD = F.ML_CD) 
+		                    WHERE 1 = 1
+		                    <include refid="where"></include>
+		                )T
+		        )
+		        SELECT U.*
+		        FROM U
+		        WHERE U.RNUM BETWEEN (#{ currentPage } * #{ show }) - (#{ show } - 1) AND (#{ currentPage } * #{ show })
+		        ORDER BY U.ML_TM DESC
+	</select>
+	
+	<!-- 받은 메일 불러오기 -->
+	<select id="getInbox" parameterType="hashMap" resultMap="mailMap">
+		WITH U AS(
+		            SELECT DENSE_RANK() OVER(ORDER BY T.ML_CD DESC) RNUM, T.*
+		            FROM(
+		                SELECT M.ML_CD,
+		                    M.ML_RCP,
+		                    (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = M.ML_RCP) ML_RCPNM,
+		                    (SELECT MEM_ML FROM MEMBER WHERE MEM_CD = M.ML_RCP) ML_RCPML,
+		                    M.ML_SEN,
+		                    (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = M.ML_SEN) ML_SENNM,
+		                    (SELECT MEM_ML FROM MEMBER WHERE MEM_CD = M.ML_SEN) ML_SENML,
+		                    M.ML_TTL, M.ML_CON, M.ML_IMSI, M.ML_TM, M.ML_YN
+		                FROM MAIL M LEFT OUTER JOIN MAIL_FILE F ON(M.ML_CD = F.ML_CD)
+		                WHERE 1 = 1
+		                <include refid="where"></include>
+		            )T
+		        )
+		        SELECT U.*
+		        FROM U
+		        WHERE U.RNUM BETWEEN (#{ currentPage } * #{ show }) - (#{ show } - 1) AND (#{ currentPage } * #{ show })
+		        ORDER BY U.ML_TM DESC
+	</select>
+	
+	<!-- 임시 저장 메일 불러오기 -->
+	<select id="getImsiMail" parameterType="hashMap" resultMap="mailMap">
+		WITH U AS(
+            SELECT DENSE_RANK() OVER(ORDER BY T.ML_CD DESC) RNUM, T.*
+            FROM(
+                    SELECT M.ML_CD,
+                        M.ML_RCP,
+                        (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = M.ML_RCP) ML_RCPNM,
+                        (SELECT MEM_ML FROM MEMBER WHERE MEM_CD = M.ML_RCP) ML_RCPML,
+                        M.ML_SEN,
+                        (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = M.ML_SEN) ML_SENNM,
+                        (SELECT MEM_ML FROM MEMBER WHERE MEM_CD = M.ML_SEN) ML_SENML,
+                        M.ML_TTL, M.ML_CON, M.ML_IMSI, M.ML_TM, M.ML_YN, F.MLF_CD
+                    FROM MAIL M LEFT OUTER JOIN MAIL_FILE F ON( M.ML_CD = F.ML_CD)
+                    WHERE 1 = 1
+                    <include refid="where"></include>
+                )T
+        )
+        SELECT U.*
+        FROM U
+         WHERE U.RNUM BETWEEN (#{ currentPage } * #{ show }) - (#{ show } - 1) AND (#{ currentPage } * #{ show })
+         ORDER BY U.ML_TM DESC
+	</select>
+	
+	<!--  전체 행의 수(total) -->
+	<select id="getTotal" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM MAIL M
+		WHERE 1 = 1
+		<include refid="where"></include>
+	</select>
+	
+	<!-- 메일 상세 보기 -->
+	<select id="mailDetail" parameterType="int" resultMap="mailMap">
+		SELECT  M.ML_CD,
+		    M.ML_RCP,
+		    (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = ML_RCP) ML_RCPNM,
+		    (SELECT MEM_ML FROM MEMBER WHERE MEM_CD = ML_RCP) ML_RCPML,
+		    M.ML_SEN,
+		    (SELECT MEM_NM FROM MEMBER WHERE MEM_CD = ML_SEN) ML_SENNM,
+		    (SELECT MEM_ML FROM MEMBER WHERE MEM_CD = ML_SEN) ML_SENML,
+		    M.ML_TTL, M.ML_CON, M.ML_IMSI, M.ML_TM, M.ML_YN, M.ML_YNDT, F.MLF_CD, A.ATTACH_CD, A.ATTACH_NM, A.ATTACH_PT
+		FROM MAIL M LEFT OUTER JOIN MAIL_FILE F ON(M.ML_CD = F.ML_CD)
+		            LEFT OUTER JOIN ATTACH A ON(F.ATTACH_CD = A.ATTACH_CD)
+		WHERE M.ML_CD = #{ mlCd }
+	</select>
+	
+	<!-- 메일 보내기 -->
+	<insert id="sendMail" parameterType="mailVO">
+		<selectKey resultType="int" keyProperty="mlCd" order="AFTER">
+			SELECT MAIL_SEQ.CURRVAL FROM DUAL
+		</selectKey>
+		INSERT INTO MAIL(ML_CD, ML_RCP, ML_SEN, ML_TTL, ML_CON, ML_TM)
+		VALUES(MAIL_SEQ.NEXTVAL, (SELECT MEM_CD FROM MEMBER WHERE MEM_ML=#{ mlRcpml }), #{ mlSen }, #{ mlTtl }, #{ mlCon }, SYSDATE)
+	</insert>
+	
+	<!-- 드래그 앤 드롭한 파일 attach테이블에 저장 -->
+	<insert id="attachInsert" parameterType="attachVo">
+		<selectKey resultType="int" keyProperty="attachCd" order="AFTER">
+			SELECT ATTACH_SEQ.CURRVAL FROM DUAL
+		</selectKey>
+		INSERT INTO ATTACH(ATTACH_CD, ATTACH_NM, ATTACH_PT, ATTACH_DT)
+		VALUES(ATTACH_SEQ.NEXTVAL, #{ attachNm }, #{ attachPt }, SYSDATE)
+	</insert>
+	
+	<!-- 메일 첨부파일 저장 -->
+	<insert id="mailFileInsert" parameterType="hashmap">
+		INSERT INTO MAIL_FILE(MLF_CD, ML_CD, ATTACH_CD)
+		SELECT MLF_SEQ.NEXTVAL AS MLF_CD, #{ mlCd } AS ML_CD
+		 , T.* 
+		FROM(
+			<foreach collection="mailFileVOList" item="mailFileVO" separator="UNION ALL">
+				SELECT #{ mailFileVO.attachCd } AS ATTACH_CD
+			 	FROM DUAL
+			</foreach>
+		)T
+	</insert>
+	
+	<!-- 수신여부 업데이트 -->
+	<update id="updateMlYn" parameterType="int">
+		UPDATE MAIL
+		SET ML_YN = 1, ML_YNDT = (CASE WHEN ML_YNDT IS NULL THEN SYSDATE ELSE ML_YNDT END)
+		WHERE ML_CD = #{ mlCd }
+	</update>
+	
+	<!-- 메일 임시 저장 -->
+	<insert id="drafts" parameterType="mailVO">
+		<selectKey resultType="int" keyProperty="mlCd" order="AFTER">
+			SELECT MAIL_SEQ.CURRVAL FROM DUAL
+		</selectKey>
+		INSERT INTO MAIL(ML_CD, ML_RCP, ML_SEN, ML_TTL, ML_CON, ML_IMSI, ML_TM)
+		VALUES(MAIL_SEQ.NEXTVAL, (SELECT MEM_CD FROM MEMBER WHERE MEM_ML=#{ mlRcpml }), #{ mlSen }, #{ mlTtl }, #{ mlCon }, 1, SYSDATE)
+	</insert>
+	
+	<!-- 임시저장한 메일 전송 -->
+	<update id="sendImsiMail" parameterType="mailVO">
+		UPDATE MAIL
+		SET ML_RCP = (SELECT MEM_CD FROM MEMBER WHERE MEM_ML=#{ mlRcpml }), ML_TTL = #{ mlTtl }, ML_CON = #{ mlCon }, ML_IMSI = NULL, ML_TM = SYSDATE
+		WHERE ML_CD = #{ mlCd }
+	</update>
+	
+	<!-- 임시 저장한 메일 다시 임시저장 -->
+	<update id="imsiMailDrafts" parameterType="mailVO">
+		UPDATE MAIL
+		SET ML_RCP = (SELECT MEM_CD FROM MEMBER WHERE MEM_ML=#{ mlRcpml }), ML_TTL = #{ mlTtl }, ML_CON = #{ mlCon }, ML_TM = SYSDATE
+		WHERE ML_CD = ${ mlCd }
+	</update>
+	
+	<!-- 메일 삭제 -->
+	<delete id="deleteMail" parameterType="java.util.Arrays">
+		DELETE FROM MAIL
+		<where>
+			ML_CD IN
+			<foreach collection="array" item="mlCd" separator="," open="(" close=")">
+				#{ mlCd }
+			</foreach>
+		</where>
+	</delete>
+	
+	<!-- 메일 파일 삭제 -->
+	<delete id="deleteMailFile" parameterType="java.util.Arrays">
+		DELETE FROM MAIL_FILE
+		<where>
+			ML_CD IN
+			<foreach collection="array" item="mlCd" separator="," open="(" close=")">
+				#{ mlCd }
+			</foreach>
+		</where>
+	</delete>
+	
+	<!-- 메일 읽음 안읽음 -->
+	<update id="changeYN" parameterType="hashMap">
+		UPDATE MAIL
+		SET ML_YN = #{ mlYn }
+		WHERE ML_CD IN 
+		<foreach collection="chkVal" item="mlCd" separator="," open="(" close=")">
+				#{ mlCd }
+		</foreach>
+	</update>
+	
+	<!-- 메일 이름 자동완성 -->
+	<select id="getNames" resultType="memberVO">
+		WITH T AS (
+		SELECT  M.MEM_NM,
+		        M.MEM_ML,
+		        (SELECT COL_NM FROM COLLEGE WHERE COL_CD = (
+		            SELECT COL_CD FROM DEPARTMENT WHERE DEP_CD = S.DEP_CD)
+		        ) SCOL,
+		        (SELECT DEP_NM FROM DEPARTMENT WHERE DEP_CD = S.DEP_CD) SDEP,
+		        (SELECT COL_NM FROM COLLEGE WHERE COL_CD = (
+		            SELECT COL_CD FROM DEPARTMENT WHERE DEP_CD = P.DEP_CD)
+		        ) PCOL,
+		        (SELECT DEP_NM FROM DEPARTMENT WHERE DEP_CD = P.DEP_CD) PDEP,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = N.MGR_DIV) NDIV,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = N.MGR_POS) NPOS
+		FROM    MEMBER M, STUDENT S, PROFESSOR P, MANAGER N
+		WHERE   M.MEM_CD = S.STU_CD (+)
+		AND     M.MEM_CD = P.PRO_CD (+)
+		AND     M.MEM_CD = N.MGR_CD (+)
+		AND     M.MEM_ML IS NOT NULL
+		)
+		SELECT  CASE WHEN SCOL IS NOT NULL THEN '[' || SCOL || ' ' || SDEP || '] 학생 ' ||  T.MEM_NM || '(' || T.MEM_ML || ')'
+		        WHEN PCOL IS NOT NULL THEN '[' || PCOL || ' ' || PDEP || '] 교수 ' ||  T.MEM_NM || '(' || T.MEM_ML || ')'
+		        ELSE '[' || NDIV || ' ' || NPOS || '] ' ||  T.MEM_NM || '(' || T.MEM_ML || ')'
+		        END MEM_NME,
+                T.MEM_NM, T.MEM_ML
+		FROM    T
+	</select>
+	
+	<!-- 메일 이름 자동완성 형식 만들어올 때 사용(임시 저장, 사이버 캠버스 메일 보내기) -->
+	<select id="getMemInfo" parameterType="int" resultType="memberVO">
+		WITH T AS (
+		SELECT  M.MEM_CD,
+                M.MEM_NM,
+		        M.MEM_ML,
+		        (SELECT COL_NM FROM COLLEGE WHERE COL_CD = (
+		            SELECT COL_CD FROM DEPARTMENT WHERE DEP_CD = S.DEP_CD)
+		        ) SCOL,
+		        (SELECT DEP_NM FROM DEPARTMENT WHERE DEP_CD = S.DEP_CD) SDEP,
+		        (SELECT COL_NM FROM COLLEGE WHERE COL_CD = (
+		            SELECT COL_CD FROM DEPARTMENT WHERE DEP_CD = P.DEP_CD)
+		        ) PCOL,
+		        (SELECT DEP_NM FROM DEPARTMENT WHERE DEP_CD = P.DEP_CD) PDEP,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = N.MGR_DIV) NDIV,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = N.MGR_POS) NPOS
+		FROM    MEMBER M, STUDENT S, PROFESSOR P, MANAGER N
+		WHERE   M.MEM_CD = S.STU_CD (+)
+		AND     M.MEM_CD = P.PRO_CD (+)
+		AND     M.MEM_CD = N.MGR_CD (+)
+		AND     M.MEM_ML IS NOT NULL
+		)
+		SELECT  CASE WHEN SCOL IS NOT NULL THEN '[' || SCOL || ' ' || SDEP || '] 학생 ' ||  T.MEM_NM || '(' || T.MEM_ML || ')'
+		        WHEN PCOL IS NOT NULL THEN '[' || PCOL || ' ' || PDEP || '] 교수 ' ||  T.MEM_NM || '(' || T.MEM_ML || ')'
+		        ELSE '[' || NDIV || ' ' || NPOS || '] ' ||  T.MEM_NM || '(' || T.MEM_ML || ')'
+		        END MEM_NME,
+                T.MEM_ML
+		FROM    T
+        WHERE T.MEM_CD = #{ memCd }
+	</select>
+	
+	<!-- 메인화면 안읽은 메일 건수 -->
+	<select id="getMlCnt" parameterType="int" resultType="int">
+		SELECT COUNT(ML_CD) ML_N
+		FROM MAIL
+		WHERE ML_RCP = #{ memCd }
+		AND ML_YN = 0
+	</select>
+</mapper>

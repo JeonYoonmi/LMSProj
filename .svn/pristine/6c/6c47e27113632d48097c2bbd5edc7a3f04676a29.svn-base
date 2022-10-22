@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 
+	namespace : xml파일은 여러개일 수 있음.
+	이를 구별하기 위한 식별 용도로 사용
+-->
+<mapper namespace="kr.ac.lms.mapper.MyPageMapper">
+
+	<update id="uploadProfile" parameterType="map">
+		update member
+		set mem_fnm = #{memFnm},
+		mem_fpt=#{memFpt}
+		where mem_cd=#{memCd}
+	</update>
+
+	<select id="selectProfile" parameterType="int" resultType="String">
+		select MEM_FNM
+		from member
+		where mem_cd=#{memCd}
+	</select>
+
+	<select id="selectPW" parameterType="int" resultType="String">
+		select mem_pass from member
+		where mem_cd=#{memCd}
+	</select>
+	
+	<update id="updatePW" parameterType="map">
+		update member
+		set mem_pass = #{memPass}
+		where mem_cd=#{memCd}
+	</update>
+	
+	<select id="selectRecord" parameterType="int" resultType="recordVO">
+		select
+		r.rec_yr, r.rec_sem, r.rec_dt
+		, ( case r.rec_cate when 'R101' then '휴학'
+		                    when 'R102' then '복학'
+		                    when 'R103' then '자퇴'
+		                    when 'R104' then '졸업'
+		    end) as rec_cate
+		,r.rec_yn
+		, rec_rsn
+		,(CASE REC_PER WHEN 1 THEN TO_CHAR(R.REC_YR || '년도 / ' || R.REC_SEM || '학기')
+			                 WHEN 2 THEN ( 
+			                                CASE R.REC_SEM WHEN 1 THEN TO_CHAR(R.REC_YR || '년도 / ' || (R.REC_SEM + 1) || '학기')
+			                                ELSE TO_CHAR((R.REC_YR + 1) || '년도 / ' || (R.REC_SEM - 1) || '학기')
+			                                END
+			                            )
+			                WHEN 3 THEN (
+			                                CASE R.REC_SEM WHEN 1 THEN TO_CHAR((R.REC_YR + 1) || '년도 / ' || R.REC_SEM || '학기')
+			                                ELSE TO_CHAR((R.REC_YR + 1) || '년도 / ' || R.REC_SEM || '학기')
+			                                END
+			                            )
+			                WHEN 4 THEN (
+			                                CASE R.REC_SEM WHEN 1 THEN TO_CHAR((R.REC_YR + 1) || '년도 / ' || (R.REC_SEM + 1) || '학기')
+			                                ELSE TO_CHAR((R.REC_YR + 2) || '년도 / ' || (R.REC_SEM - 1) || '학기')
+			                                END
+			                            )
+			            END) AS ENDEXPECT
+		from record r
+		where stu_cd=#{memCd}
+		order by rec_dt desc
+	</select>
+	
+</mapper>

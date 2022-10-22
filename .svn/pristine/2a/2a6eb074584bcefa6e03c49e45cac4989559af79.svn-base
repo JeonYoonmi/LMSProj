@@ -1,0 +1,100 @@
+@charset "UTF-8";
+.addFontColorRed {
+	color: rgb(225, 39, 64);
+}
+
+.addPadding{
+	padding-left : 10px;
+}
+
+#courseInfoRound {
+	width: 100%;
+}
+#tgradeYellowBox {
+	background: lightyellow;
+	padding: 10px;
+	border: 1px solid lightgray;
+}
+#tgradeGreenText {
+	color: green;
+}
+#beRedSpan {
+	background: rgb(225, 39, 64);
+}
+#grid td {
+	background: #f9f9f9;
+}
+#stuInfoTable{
+	width : 100%;
+	border-left: 1px solid #001353;
+   border-right: 1px solid #001353;
+   border-top: 1px solid #001353;
+   border-bottom: 1px solid #001353;
+}
+#stuInfoTable1{
+	width : 100%;
+	border-left: 1px solid #001353;
+   border-right: 1px solid #001353;
+   border-top: 1px solid #001353;
+   border-bottom: 1px solid #001353;
+}
+#stuInfoTable th{
+	width : 9%;
+	text-align: right;
+	padding-right: 10px;
+	background: #F3F8FF;
+	color : #001353;
+}
+#stuInfoTable td{
+	width: 45px;
+	background: #F3F8FF;
+}
+#stuInfoTable1 th{
+	width : 9%;
+	text-align: right;
+	padding-right: 10px;
+	background: #F3F8FF;
+	color : #001353;
+}
+#stuInfoTable1 td{
+	width: 45px;
+	background: #F3F8FF;
+}
+.infoText{
+   margin: 1px;
+   width: 98%;
+   height: 28px;
+   padding-left : 5px;
+   font-size : 0.9em;
+   background : white;
+   border : 1px solid lightgray;
+   border-radius : 0.15em;
+}
+.photoBtn {
+	height: 28px;
+	margin-top:-2px;
+}
+.photoP {
+	margin-top:-4px;
+}
+#tellCnt {
+	float : right;
+	margin-right : 6px;
+}
+#cntSpan {
+	color : #001353; 
+	font-weight: bold;
+}
+#percentageTable{
+	float : right;
+	margin-top : -7px;
+	margin-left : 10px;
+}
+#tgradeYellowBox select{
+	padding : 2px;
+	margin-left : 7px;
+}
+.ttBtn {
+	margin-top : -7px;
+	margin-left : 10px;
+}

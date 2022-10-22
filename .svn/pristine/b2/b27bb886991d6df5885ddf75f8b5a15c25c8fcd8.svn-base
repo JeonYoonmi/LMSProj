@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.lms.mapper.ManagementMapper">
+	<resultMap type="memberVO" id="memMap">
+		<result property="memCd" column="MEM_CD" />
+		<result property="memNm" column="MEM_NM" />
+		<result property="memNme" column="MEM_NME" />
+		<result property="memTel" column="MEM_TEL" />
+		<result property="memZip" column="MEM_ZIP" />
+		<result property="memAddr1" column="MEM_ADDR1" />
+		<result property="memAddr2" column="MEM_ADDR2" />
+		<result property="memReg1" column="MEM_REG1" />
+		<result property="memReg2" column="MEM_REG2" />
+		<result property="memMl" column="MEM_ML" />
+		<result property="memPass" column="MEM_PASS" />
+		<result property="memBank" column="MEM_BANK" />
+		<result property="memDepo" column="MEM_DEPO" />
+		<result property="memAct" column="MEM_ACT" />
+		<result property="memFnm" column="MEM_FNM" />
+		<result property="memFpt" column="MEM_FPT" />
+		<result property="birth" column="BIRTH" />
+		<result property="first" column="FIRST" />
+		<result property="proStu" column="PRO_STU" />
+		
+		<association property="studentVO" resultMap="studentVOMap"></association>
+		<association property="professorVO" resultMap="professorVOMap"></association>
+	</resultMap>
+	
+	<resultMap type="studentVO" id="studentVOMap">
+		<result property="stuCd" column="STU_CD" />
+		<result property="depCd" column="DEP_CD" />
+		<result property="stuYr" column="STU_YR" />
+		<result property="stuSem" column="STU_SEM" />
+		<result property="stuMrc" column="STU_MRC" />
+		<result property="stuMoc" column="STU_MOC" />
+		<result property="stuCrc" column="STU_CRC" />
+		<result property="stuCoc" column="STU_COC" />
+		<result property="stuPro" column="STU_PRO" />
+		<result property="recCate" column="REC_CATE" />
+		<result property="stuPronm" column="STU_PRONM" />
+		
+		<association property="departmentVO" resultMap="departmentVOMap"></association>
+	</resultMap>
+	
+	<resultMap type="professorVO" id="professorVOMap">
+		<result property="proCd" column="PRO_CD" />
+		<result property="depCd" column="DEP_CD" />
+		<result property="proJoin" column="PRO_JOIN" />
+		<result property="proRet" column="PRO_RET" />
+		<result property="proPos" column="PRO_POS" />
+		
+		<association property="departmentVO" resultMap="departmentVOMap"></association>
+	</resultMap>
+	
+	<resultMap type="DepartmentVO" id="departmentVOMap">
+		<result property="depCd" column="DEP_CD" />
+		<result property="colCd" column="COL_CD" />
+		<result property="depNm" column="DEP_NM" />
+		<result property="depMrc" column="DEP_MRC" />
+		<result property="depMoc" column="DEP_MOC" />
+		<result property="depCrc" column="DEP_CRC" />
+		<result property="depCoc" column="DEP_COC" />
+		<result property="depMax" column="DEP_MAX" />
+		<result property="depTel" column="DEP_TEL" />
+	
+		<association property="collegeVO" resultMap="collegeMap"></association>
+	</resultMap>
+	
+	<resultMap type="CollegeVO" id="collegeMap">
+		<result property="colCd" column="COL_CD" />
+		<result property="colNm" column="COL_NM" />
+		<result property="colCrd" column="COL_CRD" />
+		<result property="colFee" column="COL_FEE" />
+	</resultMap>
+
+	<!-- 학생 리스트 출력 -->
+	<select id="stuList" resultMap="memMap">
+		SELECT C.COL_NM, D.DEP_NM, S.STU_YR, M.MEM_CD, M.MEM_NM, M.MEM_TEL
+		FROM MEMBER M INNER JOIN STUDENT S ON(M.MEM_CD = S.STU_CD)
+		                INNER JOIN DEPARTMENT D ON(S.DEP_CD = D.DEP_CD)
+		                INNER JOIN COLLEGE C ON(D.COL_CD = C.COL_CD)
+	</select>
+	
+	<!-- 학생 상세 정보 출력 -->
+	<select id="stuDetail" parameterType="int" resultMap="memMap">
+		SELECT M.MEM_CD, M.MEM_NM, M.MEM_NME, M.MEM_TEL, M.MEM_ZIP, M.MEM_ADDR1, M.MEM_ADDR2, M.MEM_REG1, M.MEM_ML, M.MEM_BANK, M.MEM_DEPO, M.MEM_ACT, M.MEM_FNM,
+				SUBSTR(M.MEM_CD, 1, 4) || '-03-01(최초입학)' AS FIRST,
+				S.STU_YR, S.STU_SEM, S.STU_MRC, S.STU_MOC, S.STU_CRC, S.STU_COC, 
+				(SELECT MEM_NM FROM MEMBER WHERE MEM_CD = S.STU_PRO) STU_PRONM, 
+				(SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = S.REC_CATE) REC_CATE,
+		       D.DEP_NM, D.DEP_MRC, D.DEP_MOC, D.DEP_CRC, D.DEP_COC,
+		       COL_NM
+		FROM MEMBER M INNER JOIN STUDENT S ON(M.MEM_CD = S.STU_CD)
+		                INNER JOIN DEPARTMENT D ON(S.DEP_CD = D.DEP_CD)
+		                INNER JOIN COLLEGE C ON(D.COL_CD = C.COL_CD)
+		WHERE MEM_CD = #{ memCd }
+	</select>
+	
+	<!-- 교수 리스트 출력 -->
+	<select id="proList" resultMap="memMap">
+		SELECT M.MEM_CD, M.MEM_NM, M.MEM_TEL, 
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = P.PRO_POS) PRO_POS,
+		        D.DEP_NM, C.COL_NM
+		FROM MEMBER M 
+        INNER JOIN PROFESSOR P ON (P.PRO_CD = M.MEM_CD)
+		INNER JOIN DEPARTMENT D ON (D.DEP_CD = P.DEP_CD )
+		INNER JOIN COLLEGE C ON(C. COL_CD = D.COL_CD )
+	</select>
+	
+	<!-- 교수 상세 정보 출력 -->
+	<select id="proDetail" parameterType="int" resultMap="memMap">
+		SELECT M.MEM_CD, M.MEM_NM, M.MEM_NME, M.MEM_TEL, M.MEM_ZIP, M.MEM_ADDR1, M.MEM_ADDR2, M.MEM_REG1, M.MEM_REG2, M.MEM_ML, M.MEM_BANK, M.MEM_DEPO, M.MEM_ACT, M.MEM_FNM,
+		        (SELECT COMD_NM FROM COMMON_DETAIL WHERE COMD_CD = P.PRO_POS) PRO_POS,
+		        P.PRO_JOIN, P.PRO_RET, D.DEP_NM, C.COL_NM
+		FROM MEMBER M INNER JOIN PROFESSOR P ON(M.MEM_CD = P.PRO_CD)
+		                INNER JOIN DEPARTMENT D ON(P.DEP_CD = D.DEP_CD)
+		                INNER JOIN COLLEGE C ON(D.COL_CD = C. COL_CD)
+		WHERE MEM_CD = #{ memCd }
+	</select>
+	
+	<!-- 교수별 해당학과 학생 출력  -->
+	<select id="getProStuList" parameterType="memberVO" resultMap="memMap">
+		SELECT C.COL_NM, D.DEP_NM, S.STU_YR, M.MEM_CD, M.MEM_NM, M.MEM_TEL,
+		        (CASE S.STU_PRO WHEN #{ memCd } THEN 'Y' 
+		                        ELSE 'N' END) PRO_STU
+		FROM MEMBER M INNER JOIN STUDENT S ON(M.MEM_CD = S.STU_CD)
+		                INNER JOIN DEPARTMENT D ON(S.DEP_CD = D.DEP_CD)
+		                INNER JOIN COLLEGE C ON(D.COL_CD = C.COL_CD)
+		WHERE D.DEP_CD = #{ professorVO.depCd }
+	</select>
+</mapper>

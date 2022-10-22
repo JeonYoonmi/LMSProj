@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="kr.ac.lms.mapper.ScholarshipMapper">
+  
+  <!-- 교수가 현재 년도, 현재 학기(현재 월)에 교수추천장학금을 몇명 주었는지 확인하기-->
+  <select id="countCheck" parameterType="int" resultType="int">
+  	SELECT COUNT(MEM_CD) 
+    FROM SCL_HISTORY 
+    WHERE MEM_CD = #{memCd}
+    AND SCL_CD = 3
+    AND 
+    <![CDATA[CASE WHEN TO_NUMBER(TO_CHAR(SCLH_DT,'MM'))>=3 AND TO_NUMBER(TO_CHAR(SCLH_DT,'MM'))<= 8 THEN 1 ELSE 2]]> END = 
+    <![CDATA[CASE WHEN TO_NUMBER(TO_CHAR(SYSDATE,'MM'))>=3 AND TO_NUMBER(TO_CHAR(SYSDATE,'MM'))<= 8 THEN 1 ELSE 2]]> END
+    AND TO_CHAR(SCLH_DT,'YYYY') = TO_CHAR(SYSDATE,'YYYY')
+  </select>
+  
+  <!-- 교수 학과 학생 불러오기  -->
+  <select id="stuList" parameterType="int" resultType="HashMap">
+	SELECT A.STU_CD
+    , A.STU_YR
+  	, CASE WHEN MOD(A.STU_SEM,2) =1 THEN 1 ELSE 2 END AS STU_SEM
+  	, M.MEM_NM  
+    , CASE WHEN (SELECT COUNT(NVL(MAX(C.STU_CD),0))
+    FROM SCL_HISTORY C, STUDENT D
+    WHERE C.SCL_CD = 3 
+    AND C.STU_CD = D.STU_CD
+    AND D.DEP_CD = #{depCd}
+    AND 
+    <![CDATA[CASE WHEN TO_NUMBER(TO_CHAR(SCLH_DT,'MM'))>=3 AND TO_NUMBER(TO_CHAR(SCLH_DT,'MM'))<= 8 THEN 1 ELSE 2]]> END = 
+    <![CDATA[CASE WHEN TO_NUMBER(TO_CHAR(SYSDATE,'MM'))>=3 AND TO_NUMBER(TO_CHAR(SYSDATE,'MM'))<= 8 THEN 1 ELSE 2]]> END
+    AND TO_CHAR(SCLH_DT,'YYYY') = TO_CHAR(SYSDATE,'YYYY')
+    AND A.STU_CD = D.STU_CD
+    GROUP BY 1) = 1 THEN '추천' ELSE '-' END AS RECOMMEND
+  	FROM STUDENT A, MEMBER M
+  	WHERE A.DEP_CD = #{depCd}
+    AND A.STU_CD = M.MEM_CD 
+    AND A.REC_CATE = 'R106'
+   	ORDER BY RECOMMEND ASC, A.STU_YR ASC, A.STU_SEM ASC, A.STU_CD ASC
+  </select>
+  
+  <!-- 교수 추천 장학금 신청하기 -->
+  <update id="proApply" parameterType="java.util.List">
+  	INSERT INTO SCL_HISTORY (
+    SCLH_CD
+    , STU_CD
+    , SCL_CD
+    , SCLH_SEM
+    , SCLH_DT
+    , SCLH_AMT
+    , SCLH_YN
+    , MEM_CD
+    , SCLH_RSN
+    , SCLH_GUBUN
+    , SCLH_ADT
+    , MGR_CD
+    )
+    SELECT SCLHISTORY_SEQ.NEXTVAL AS sclhCd
+    	,T.*
+    	FROM(
+    	<foreach collection="list" item="item" index="index" separator="union all">
+    	SELECT 
+    	#{item.stuCd} AS stuCd
+    	,#{item.sclCd} AS sclCd
+    	,(SELECT STU_SEM FROM STUDENT WHERE STU_CD = #{item.stuCd}) AS sclhSem
+    	,SYSDATE AS sclhDt
+    	,(SELECT SCL_AMT FROM SCHOLARSHIP WHERE SCL_CD = #{item.sclCd}) AS sclhAmt
+    	,0 AS sclhYn
+    	,#{item.memCd} AS memCd
+    	, NULL AS sclhRsn
+    	, 'AP102' AS sclhGubun
+    	, NULL AS sclhAdt
+    	, NULL AS mgrCd
+    	FROM DUAL
+    	</foreach>
+    	)T
+  </update>
+  
+  <!-- 학생의 장학금 수혜내역 조회 -->
+  <select id="stuHistory" parameterType="int" resultType="sclHistoryVO">
+  	SELECT 
+	B.SCL_NM
+  , TO_CHAR(A.SCLH_DT,'YYYY') AS SCLH_DT
+  , CASE WHEN MOD(A.SCLH_SEM,2) =1 THEN 1 ELSE 2 END AS SCLH_SEM
+  , A.SCLH_AMT
+	FROM
+    SCL_HISTORY A, SCHOLARSHIP B
+    WHERE A.SCL_CD = B.SCL_CD 
+    AND SCLH_YN = 1 
+    AND STU_CD = #{stuCd} 
+    ORDER BY A.SCLH_SEM DESC
+  </select>
+  
+  <!-- 관리자의 모든 학생 장학금 수혜내역 조회 -->
+  <select id="allHistory" resultType="sclHistoryVO">
+ 	SELECT
+ 	<![CDATA[ 
+    TO_CHAR(A.SCLH_DT,'YYYY')||'년'|| CASE WHEN TO_NUMBER(TO_CHAR(A.SCLH_DT,'MM'))>=3 AND
+    TO_NUMBER(TO_CHAR(A.SCLH_DT,'MM'))<= 8 THEN 1 ELSE 2 END ||'학기' AS SCLH_DT ]]>
+    , A.STU_CD 
+    , C.MEM_NM 
+    , B.SCL_NM 
+    , F.COL_NM AS SCLH_RSN
+    , D.DEP_NM AS SCLH_GUBUN
+    , A.SCLH_AMT 
+	FROM SCL_HISTORY A, SCHOLARSHIP B, MEMBER C, DEPARTMENT D, STUDENT E, COLLEGE F
+	WHERE A.SCL_CD = B.SCL_CD 
+	AND SCLH_YN = 1 
+	AND C.MEM_CD = A.STU_CD 
+	AND D.DEP_CD = E.DEP_CD 
+	AND E.STU_CD = A.STU_CD 
+	AND F.COL_CD = D.COL_CD
+	ORDER BY A.SCLH_DT DESC, E.DEP_CD ASC, E.STU_YR ASC, E.STU_SEM ASC, E.STU_CD ASC
+  </select>
+  
+  <!-- 교수가 장학금 추천한 학생 리스트 조회 -->
+  <select id="proHistory" resultType="sclHistoryVO">
+  <![CDATA[
+  	SELECT
+	TO_CHAR(A.SCLH_DT,'YYYY')||'년'|| CASE WHEN TO_NUMBER(TO_CHAR(A.SCLH_DT,'MM'))>=3 AND
+	TO_NUMBER(TO_CHAR(A.SCLH_DT,'MM'))<= 8 THEN 1 ELSE 2 END ||'학기' AS SCLH_DT
+	, A.STU_CD
+	, B.MEM_NM SCLH_RSN
+	, A.SCLH_YN
+	, A.SCLH_CD
+	FROM
+	SCL_HISTORY A, MEMBER B, STUDENT C
+	WHERE 
+	A.MEM_CD = #{memCd} 
+	AND A.STU_CD = B.MEM_CD 
+	AND C.STU_CD = A.STU_CD
+	ORDER BY A.SCLH_DT DESC, C.STU_YR ASC, C.STU_SEM ASC, C.STU_CD ASC
+	]]>
+	
+  </select>
+  
+  <!--모든학생의 현재년도 현재학기 성적 리스트-->
+  
+   <!-- 장학금 성적 기준에 따른 산출 리스트 -->
+  <select id="gradeList" resultType="HashMap">
+  <![CDATA[
+    SELECT * FROM(
+   SELECT 
+   A.STU_CD
+   , M.MEM_NM
+   , C.DEP_NM
+   , S.STU_YR||'학년' AS STU_YR
+   , CASE WHEN MOD(S.STU_SEM,2) =1 THEN 1 ELSE 2 END ||'학기' AS STU_SEM
+   ,E.COL_NM
+   ,E.COL_FEE
+   ,ROUND(NVL(SUM(D.COMD_CON*B.LECA_CRD)/DECODE(SUM(B.LECA_CRD),0,NULL,SUM(B.LECA_CRD)),0),2) AS TOTAL_AVG
+   ,RANK() OVER (PARTITION BY C.DEP_CD, S.STU_YR
+    ORDER BY ROUND(NVL(SUM(D.COMD_CON*B.LECA_CRD)/DECODE(SUM(B.LECA_CRD),0,NULL,SUM(B.LECA_CRD)),0),2) DESC) AS RANKING
+    , CASE WHEN RANK() OVER (PARTITION BY C.DEP_CD, S.STU_YR
+    ORDER BY ROUND(NVL(SUM(D.COMD_CON*B.LECA_CRD)/DECODE(SUM(B.LECA_CRD),0,NULL,SUM(B.LECA_CRD)),0),2) DESC) = 1 THEN E.COL_FEE * (SELECT SCL_AMT FROM SCHOLARSHIP WHERE SCL_CD = 1) * 0.01
+    WHEN RANK() OVER (PARTITION BY C.DEP_CD, S.STU_YR
+    ORDER BY ROUND(NVL(SUM(D.COMD_CON*B.LECA_CRD)/DECODE(SUM(B.LECA_CRD),0,NULL,SUM(B.LECA_CRD)),0),2) DESC) = 2 THEN E.COL_FEE * (SELECT SCL_AMT FROM SCHOLARSHIP WHERE SCL_CD = 2) * 0.01
+    ELSE E.COL_FEE * (SELECT SCL_AMT FROM SCHOLARSHIP WHERE SCL_CD = 4) * 0.01 END AS SCHOLARSHIP
+   FROM LEC_APPLY B INNER JOIN STU_LEC A ON A.LEC_CD = B.LEC_CD 
+   INNER JOIN COMMON_DETAIL D ON A.SL_SCORE = D.COMD_CD
+   INNER JOIN MEMBER M ON M.MEM_CD = A.STU_CD
+   INNER JOIN STUDENT S ON A.STU_CD = S.STU_CD
+   INNER JOIN DEPARTMENT C ON C.DEP_CD = S.DEP_CD
+   INNER JOIN COLLEGE E ON E.COL_CD = C.COL_CD
+   WHERE B.LECA_YR = TO_NUMBER(TO_CHAR(SYSDATE,'YYYY'))
+   AND B.LECA_SEM = CASE WHEN TO_NUMBER(TO_CHAR(SYSDATE,'MM'))>=3 AND TO_NUMBER(TO_CHAR(SYSDATE,'MM'))<= 8 THEN 1 ELSE 2 END
+   GROUP BY A.STU_CD, M.MEM_NM, C.DEP_NM, E.COL_NM,E.COL_FEE,S.STU_YR,S.STU_SEM,C.DEP_CD
+   )
+   WHERE RANKING<=3
+	]]>
+  </select>
+  
+  <!-- 올해 성적 장학금을 수여했는지 여부 확인 -->
+  <select id="insertGradeCheck" resultType="int">
+  SELECT COUNT(SCLH_CD) 
+  FROM SCL_HISTORY 
+  WHERE SCL_CD = 1 
+  AND
+  <![CDATA[CASE WHEN TO_NUMBER(TO_CHAR(SCLH_DT,'MM'))>=3 AND TO_NUMBER(TO_CHAR(SCLH_DT,'MM'))<= 8 THEN 1 ELSE 2]]> END = 
+  <![CDATA[CASE WHEN TO_NUMBER(TO_CHAR(SYSDATE,'MM'))>=3 AND TO_NUMBER(TO_CHAR(SYSDATE,'MM'))<= 8 THEN 1 ELSE 2]]> END
+  AND TO_CHAR(SCLH_DT,'YYYY') = TO_CHAR(SYSDATE,'YYYY')
+  </select>
+  
+  <!-- 성적에 따른 성적장학금 수여 -->
+  <update id="insertGradeScl" parameterType="java.util.List">
+ 	INSERT INTO SCL_HISTORY (
+    SCLH_CD
+    , STU_CD
+    , SCL_CD
+    , SCLH_SEM
+    , SCLH_DT
+    , SCLH_AMT
+    , SCLH_YN
+    , MEM_CD
+    , SCLH_RSN
+    , SCLH_GUBUN
+    , SCLH_ADT
+    , MGR_CD
+    )
+    SELECT SCLHISTORY_SEQ.NEXTVAL AS sclhCd
+    	,T.*
+    	FROM(
+    	<foreach collection="list" item="item" index="index" separator="union all">
+    	SELECT #{item.stuCd} AS stuCd
+    	,#{item.sclCd} AS sclCd
+    	,(SELECT STU_SEM FROM STUDENT WHERE STU_CD = #{item.stuCd}) AS sclhSem
+    	,SYSDATE AS sclhDt
+    	,#{item.sclhAmt} AS sclhAmt
+    	,1 AS sclhYn
+    	,#{item.memCd} AS memCd
+    	, NULL AS sclhRsn
+    	, 'AP102' AS sclhGubun
+    	, NULL AS sclhAdt
+    	, NULL AS mgrCd
+    	FROM DUAL
+    	</foreach>
+    	)T
+  </update>
+  
+  <!-- 당학기 성적 -->
+  <select id="getLectureGrade" parameterType="int" resultType="hashmap">
+   <![CDATA[
+  		SELECT 
+      	 D.COMD_NM AS GRADE
+        , L.LECA_NM AS LECTURE
+        , D2.COMD_NM AS CATE
+        , L.LECA_CRD AS CREDIT
+        FROM STU_LEC S INNER JOIN COMMON_DETAIL D ON S.SL_SCORE = D.COMD_CD 
+        INNER JOIN LEC_APPLY L ON L.LEC_CD = S.LEC_CD 
+        INNER JOIN COMMON_DETAIL D2 ON L.LECA_CATE = D2.COMD_CD 
+        WHERE STU_CD = #{stuCd}
+        AND L.LECA_YR = TO_CHAR(SYSDATE,'YYYY')
+        AND L.LECA_SEM = CASE WHEN TO_NUMBER(TO_CHAR(SYSDATE,'MM'))>=3 AND TO_NUMBER(TO_CHAR(SYSDATE,'MM'))<= 8 THEN 1 ELSE 2 END
+ 	]]>
+  </select>
+  
+  <!-- 교수추천장학금 취소(관리자가 승인전인 상태만) -->
+  <delete id="deleteRecommend" parameterType="int">
+  		DELETE FROM SCL_HISTORY
+  		WHERE SCLH_CD = #{sclhCd}
+  </delete>
+ 
+
+  </mapper>

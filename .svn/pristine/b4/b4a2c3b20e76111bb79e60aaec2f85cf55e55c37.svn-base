@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 
+	namespace : xml파일은 여러개일 수 있음.
+	이를 구별하기 위한 식별 용도로 사용
+-->
+<mapper namespace="kr.ac.lms.mapper.ReservationMapper">
+
+
+
+	
+	<!-- 시설 카테 불러오기 -->
+	<select id="facility" resultType="facilityVO">
+		SELECT * FROM FACILITY
+	</select>
+	
+	<!-- 예약 조회 -->
+	<select id="list" resultType="reservationVO" parameterType="String">
+		SELECT 
+		A.RSV_CD
+		, A.FAC_CD
+		, A.MEM_CD
+		, A.RSV_ST
+		, A.RSV_EN
+		, B.MEM_NM
+		FROM RESERVATION A, MEMBER B
+		WHERE 
+		FAC_CD = #{facCd}  
+		AND A.MEM_CD = B.MEM_CD
+	</select>
+
+	
+	<!-- 예약 등록 -->
+	<insert id="insert" parameterType="reservationVO">
+		INSERT INTO RESERVATION(RSV_CD, FAC_CD, MEM_CD, RSV_ST, RSV_EN)
+		VALUES(
+		RESERVATION_SEQ.NEXTVAL,#{facCd}
+		,#{memCd} 
+		,TO_DATE(#{rsvSt},'YYYY-MM-DD hh24:mi') 
+		,TO_DATE(#{rsvEn},'YYYY-MM-DD hh24:mi')
+		)
+	</insert>
+	
+	<!-- 예약 삭제 -->
+	<delete id="delete" parameterType="reservationVO">
+		DELETE FROM RESERVATION 
+		WHERE 
+		MEM_CD = #{memCd} 
+		AND RSV_ST = TO_DATE(#{rsvSt},'YYYY-MM-DD hh24:mi')
+	</delete>
+	
+	<!-- 예약 수정 -->
+	<update id="modify" parameterType="hashmap">
+		UPDATE RESERVATION 
+		SET 
+		RSV_ST = TO_DATE(#{newSt},'YYYY-MM-DD hh24:mi')
+		, RSV_EN = TO_DATE(#{newEn}, 'YYYY-MM-DD hh24:mi')
+		WHERE RSV_ST = TO_DATE(#{oldSt},'YYYY-MM-DD hh24:mi') 
+		AND MEM_CD = #{memCd}
+	</update>
+	
+	<!-- 과거내역 조회 -->
+	<select id="history" resultType="hashmap" parameterType="reservationVO">
+		SELECT
+		TO_CHAR(RSV_ST,'YY-MM-DD') AS RSV_ST,
+        TO_CHAR(RSV_ST,'hh24:mi') ||'~'|| TO_CHAR(RSV_EN,'hh24:mi') AS RSV_EN
+		FROM FACILITY A, RESERVATION B 
+		WHERE A.FAC_CD = B.FAC_CD 
+		AND B.MEM_CD = #{memCd} 
+		AND A.FAC_CD = #{facCd} 
+		ORDER BY RSV_ST DESC
+	</select>
+</mapper>
